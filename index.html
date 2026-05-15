@@ -403,7 +403,32 @@ const CUSTOM_TEAM_KEY    = 'bvb_custom_team_v1';
 const MANAGED_CLIENTS_KEY= 'bvb_clients_v2';
 const MANAGED_CATS_KEY   = 'bvb_cats_v2';
 const DELETED_IDS_KEY    = 'bvb_deleted_v1';
+const HOURS_KEY          = 'bvb_hours_v1';
 const DEFAULT_PIN        = '1234';
+
+const DAY_KEYS   = ['sun','mon','tue','wed','thu','fri','sat'];
+const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DEFAULT_HOURS = {
+  mon: '9:00a – 3:00p',
+  tue: '9:00a – 3:00p',
+  wed: '9:00a – 3:00p',
+  thu: 'Remote (mgr)',
+  fri: '10:00a – 2:00p',
+  sat: 'Closed',
+  sun: 'Closed',
+};
+function todayHours(hours){ const d=new Date().getDay(); return (hours&&hours[DAY_KEYS[d]])||'Closed'; }
+
+// ── SAFE STORAGE ── (handles quota errors / iOS private mode)
+let __storageWarned = false;
+function safeStore(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch(e){
+    if(!__storageWarned){ __storageWarned = true; window.dispatchEvent(new CustomEvent('bvb-storage-full')); }
+    console.warn('localStorage write failed for', key, e);
+    return false;
+  }
+}
 
 const NOTE_COLOR_OPTIONS = [
   {id:'n-y', hex:'#f2e49a', label:'Yellow'},
@@ -533,7 +558,10 @@ function playSound(type){
 // ── SHEETS ─────────────────────────────────────────────────────────────────
 async function sheetsReq(cfg,method,path,body=null){
   const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}${path}`,{method,headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
-  if(!r.ok)throw new Error(`Sheets ${r.status}`);
+  if(!r.ok){
+    if(r.status===401||r.status===403)window.dispatchEvent(new CustomEvent('bvb-auth-expired'));
+    throw new Error(`Sheets ${r.status}`);
+  }
   return r.json();
 }
 async function ensureHeaders(cfg){
@@ -601,7 +629,7 @@ function ChaChing({onDone}){
 
 // ── TOAST ──────────────────────────────────────────────────────────────────
 function Toast({msg,type,onDone}){
-  useEffect(()=>{const t=setTimeout(onDone,3200);return()=>clearTimeout(t);},[]);
+  useEffect(()=>{const t=setTimeout(onDone,type==='error'?5500:3200);return()=>clearTimeout(t);},[]);
   return<div className={`toast ${type}`}>{msg}</div>;
 }
 
@@ -761,7 +789,7 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
             <button className={`color-swatch${pickerBase&&!NOTE_COLOR_OPTIONS.find(o=>o.hex===pickerBase)?' selected':''}`}
               style={{background:'var(--bg3)',border:'2px solid var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text2)'}}
               title="Custom color" onClick={()=>colorInputRef.current?.click()}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="6.5" cy="6.5" r="5.5"/><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/><circle cx="6.5" cy="6.5" r="1.3" fill="currentColor" stroke="none"/></svg>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 1 L12 3.5 L5.5 10 L3 10 L3 7.5 Z"/><line x1="3" y1="10" x2="1.5" y2="11.5"/></svg>
             </button>
             <input ref={colorInputRef} type="color" style={{display:'none'}}
               value={pickerBase&&pickerBase.startsWith('#')?pickerBase:'#f5cc90'}
@@ -1114,7 +1142,7 @@ function ScoresView({tasks,manualBadges,demerits}){
 }
 
 // ── SETTINGS VIEW ──────────────────────────────────────────────────────────
-function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet}){
+function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange}){
   const [draft,setDraft]=useState(settings);
   const [saved,setSaved]=useState(false);
   const [devOpen,setDevOpen]=useState(false);
@@ -1240,6 +1268,19 @@ function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onMa
               </div>
               {userMsg&&<div style={{fontSize:'11px',fontFamily:'DM Mono,monospace',color:userMsg.startsWith('✓')?'#8fce8f':'#f08080',marginTop:'8px'}}>{userMsg}</div>}
             </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Warehouse Hours</div>
+              <p style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace',marginBottom:'12px'}}>Shown in the top bar. Leave a day blank to display "Closed".</p>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:'8px'}}>
+                {DAY_KEYS.map((k,i)=>(
+                  <div key={k} className="field" style={{margin:0,display:'flex',alignItems:'center',gap:'8px'}}>
+                    <label style={{margin:0,minWidth:'36px'}}>{DAY_LABELS[i]}</label>
+                    <input value={hours?.[k]||''} onChange={e=>onHoursChange({...hours,[k]:e.target.value})} placeholder="e.g. 9:00a – 3:00p"/>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-cancel" style={{fontSize:'11px',marginTop:'10px'}} onClick={()=>{if(window.confirm('Reset all hours to defaults?'))onHoursChange({...DEFAULT_HOURS});}}>Reset to defaults</button>
+            </div>
             <button className="btn-cancel" style={{fontSize:'12px',alignSelf:'flex-start'}} onClick={()=>setAdminUnlocked(false)}>🔒 Lock admin panel</button>
           </div>
         )}
@@ -1283,7 +1324,8 @@ function App(){
     return!!(saved?.accessToken&&saved?.tokenExpiry&&saved.tokenExpiry>Date.now()+30000);
   });
   const [tasks,setTasks]=useState(()=>getSaved(TASKS_KEY)||[]);
-  const [settings,setSettings]=useState(()=>getSaved(SETTINGS_KEY)||{theme:'theme-e',fontSize:14,viewMode:isMobileWidth()?'list':'cards'});
+  const [settings,setSettings]=useState(()=>getSaved(SETTINGS_KEY)||{theme:'theme-foundry',fontSize:14,viewMode:isMobileWidth()?'list':'cards'});
+  const [hours,setHours]=useState(()=>getSaved(HOURS_KEY)||DEFAULT_HOURS);
   const [manualBadges,setManualBadges]=useState(()=>getSaved(BADGES_KEY)||{});
   const [demerits,setDemerits]=useState(()=>getSaved(DEMERITS_KEY)||[]);
   const [view,setView]=useState('board');
@@ -1316,16 +1358,17 @@ function App(){
 
   const allTeam=[...TEAM,...customTeam];
 
-  useEffect(()=>{localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));},[tasks]);
-  useEffect(()=>{localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,viewMode}));},[settings,viewMode]);
-  useEffect(()=>{localStorage.setItem(BADGES_KEY,JSON.stringify(manualBadges));},[manualBadges]);
-  useEffect(()=>{localStorage.setItem(DEMERITS_KEY,JSON.stringify(demerits));},[demerits]);
-  useEffect(()=>{localStorage.setItem(MANAGED_CATS_KEY,JSON.stringify(managedCats));},[managedCats]);
-  useEffect(()=>{localStorage.setItem(DELETED_IDS_KEY,JSON.stringify([...deletedIds]));},[deletedIds]);
-  useEffect(()=>{localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));},[projects]);
-  useEffect(()=>{localStorage.setItem(MANAGED_CLIENTS_KEY,JSON.stringify(managedClients));},[managedClients]);
-  useEffect(()=>{localStorage.setItem(CUSTOM_TEAM_KEY,JSON.stringify(customTeam));},[customTeam]);
-  useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-e');},[settings.theme]);
+  useEffect(()=>{safeStore(TASKS_KEY,tasks);},[tasks]);
+  useEffect(()=>{safeStore(SETTINGS_KEY,{...settings,viewMode});},[settings,viewMode]);
+  useEffect(()=>{safeStore(BADGES_KEY,manualBadges);},[manualBadges]);
+  useEffect(()=>{safeStore(DEMERITS_KEY,demerits);},[demerits]);
+  useEffect(()=>{safeStore(MANAGED_CATS_KEY,managedCats);},[managedCats]);
+  useEffect(()=>{safeStore(DELETED_IDS_KEY,[...deletedIds]);},[deletedIds]);
+  useEffect(()=>{safeStore(PROJECTS_KEY,projects);},[projects]);
+  useEffect(()=>{safeStore(MANAGED_CLIENTS_KEY,managedClients);},[managedClients]);
+  useEffect(()=>{safeStore(CUSTOM_TEAM_KEY,customTeam);},[customTeam]);
+  useEffect(()=>{safeStore(HOURS_KEY,hours);},[hours]);
+  useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-foundry');},[settings.theme]);
 
   // ── Try to restore session from stored token ──
   useEffect(()=>{
@@ -1359,7 +1402,7 @@ function App(){
           if(resp.access_token){
             const expiry=Date.now()+((resp.expires_in||3600)*1000);
             const c={...HARDCODED_CONFIG,accessToken:resp.access_token,tokenExpiry:expiry};
-            setConfig(c);localStorage.setItem(CONFIG_KEY,JSON.stringify(c));
+            setConfig(c);safeStore(CONFIG_KEY,c);
             const pr=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${resp.access_token}`}});
             const p=await pr.json();
             const member=TEAM.find(t=>t.email===p.email);
@@ -1369,7 +1412,7 @@ function App(){
             setLoading(true);
             try{
               const sheetTasks=await sheetLoad(c);
-              if(sheetTasks.length>0){setTasks(sheetTasks);localStorage.setItem(TASKS_KEY,JSON.stringify(sheetTasks));showToast(`Signed in as ${uname} · ${sheetTasks.length} tasks loaded`,'success');}
+              if(sheetTasks.length>0){setTasks(sheetTasks);safeStore(TASKS_KEY,sheetTasks);showToast(`Signed in as ${uname} · ${sheetTasks.length} tasks loaded`,'success');}
               else{showToast(`Signed in as ${uname}`,'success');}
             }catch{showToast('Signed in — using local data','success');}
             setLoading(false);
@@ -1473,6 +1516,13 @@ function App(){
     try{
       const sheetTasks=await sheetLoad(cfg);
       if(sheetTasks.length>0){
+        // Union of comments by ID — preserves local optimistic comments
+        const unionComments=(localT,sheetT)=>{
+          const sheetIds=new Set((sheetT.comments||[]).map(c=>c.id));
+          const extras=(localT.comments||[]).filter(c=>!sheetIds.has(c.id));
+          if(!extras.length)return sheetT.comments||[];
+          return [...(sheetT.comments||[]),...extras].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+        };
         setTasks(local=>{
           const deleted=deletedIdsRef.current;
           const visible=sheetTasks.filter(t=>!deleted.has(t.id));
@@ -1482,9 +1532,17 @@ function App(){
             const lt=local.find(t=>t.id===st.id);
             if(!lt)return st;
             const activeTimer=lt.acceptedAt&&!lt.completedAt&&!lt.pausedAt;
-            return activeTimer?lt:st;
+            const base=activeTimer?lt:st;
+            return{...base,comments:unionComments(lt,st)};
           });
           return[...merged,...localOnly];
+        });
+        // Keep comment drawer current — union local + sheet comments to avoid flicker
+        setCommentTask(prev=>{
+          if(!prev)return null;
+          const sheetVer=sheetTasks.find(t=>t.id===prev.id);
+          if(!sheetVer)return prev;
+          return{...sheetVer,comments:unionComments(prev,sheetVer)};
         });
         if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks`,'success');
       }else{
@@ -1494,23 +1552,64 @@ function App(){
     if(!silent)setRefreshing(false);
   };
 
-  // 2-minute background poll
+  // immediate refresh on sign-in/restore + 2-minute background poll
   useEffect(()=>{
     if(!config?.accessToken)return;
+    doRefresh(configRef.current,true);
     pollRef.current=setInterval(()=>doRefresh(configRef.current,true),120000);
     return()=>clearInterval(pollRef.current);
   },[config?.accessToken]);
 
-  const handleSignOut=()=>{setUser(null);setShowMenu(false);setConfig(p=>({...p,accessToken:null,tokenExpiry:null}));localStorage.removeItem(CONFIG_KEY);if(window.google)window.google.accounts.oauth2.revoke(config?.accessToken||'');};
+  const handleSignOut=()=>{setUser(null);setShowMenu(false);setConfig(p=>({...p,accessToken:null,tokenExpiry:null}));try{localStorage.removeItem(CONFIG_KEY);}catch(e){}if(window.google)window.google.accounts.oauth2.revoke(config?.accessToken||'');};
+
+  // Storage-full toast (one-time, always listening)
+  useEffect(()=>{
+    const onStorageFull=()=>showToast('Browser storage is full — local changes may not save','error');
+    window.addEventListener('bvb-storage-full',onStorageFull);
+    return()=>window.removeEventListener('bvb-storage-full',onStorageFull);
+  },[]);
+
+  // Auth-expired + visibility resume (only when signed in)
+  useEffect(()=>{
+    if(!config?.accessToken)return;
+    let handled=false;
+    const onAuthExpired=()=>{if(handled)return;handled=true;showToast('Session expired — please sign in again','error');handleSignOut();};
+    const onVisible=()=>{if(document.visibilityState==='visible')doRefresh(configRef.current,true);};
+    window.addEventListener('bvb-auth-expired',onAuthExpired);
+    document.addEventListener('visibilitychange',onVisible);
+    return()=>{
+      window.removeEventListener('bvb-auth-expired',onAuthExpired);
+      document.removeEventListener('visibilitychange',onVisible);
+    };
+  },[config?.accessToken]);
 
   const handleAddComment=async(taskId,text)=>{
-    const comment={id:'c_'+Date.now(),text,authorName:user.name,authorEmail:user.email,createdAt:Date.now()};
-    const updated=tasks.map(t=>t.id===taskId?{...t,comments:[...(t.comments||[]),comment]}:t);
-    setTasks(updated);
-    // Update comment task state too so drawer refreshes
-    const updatedTask=updated.find(t=>t.id===taskId);
-    setCommentTask(updatedTask);
-    await syncTask(updatedTask);
+    const comment={id:'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),text,authorName:user.name,authorEmail:user.email,createdAt:Date.now()};
+    // Optimistic local update so the user sees their comment instantly
+    const optimistic=tasks.map(t=>t.id===taskId?{...t,comments:[...(t.comments||[]),comment]}:t);
+    setTasks(optimistic);
+    const optimisticTask=optimistic.find(t=>t.id===taskId);
+    setCommentTask(optimisticTask);
+    // Read-merge-write: re-fetch from sheet right before syncing so we don't
+    // clobber a comment another device posted in the same window.
+    let toSync=optimisticTask;
+    if(config?.accessToken){
+      try{
+        const fresh=await sheetLoad(configRef.current);
+        const sheetVer=fresh.find(t=>t.id===taskId);
+        if(sheetVer){
+          const sheetIds=new Set((sheetVer.comments||[]).map(c=>c.id));
+          const localExtras=(optimisticTask.comments||[]).filter(c=>!sheetIds.has(c.id));
+          const merged=[...(sheetVer.comments||[]),...localExtras].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+          toSync={...optimisticTask,...sheetVer,comments:merged,
+            acceptedAt:optimisticTask.acceptedAt,pausedAt:optimisticTask.pausedAt,
+            accumulatedMs:optimisticTask.accumulatedMs,completedAt:optimisticTask.completedAt};
+          setTasks(prev=>prev.map(t=>t.id===taskId?toSync:t));
+          setCommentTask(prev=>prev&&prev.id===taskId?toSync:prev);
+        }
+      }catch(e){/* fall back to plain optimistic sync */}
+    }
+    await syncTask(toSync);
   };
 
   const handleDrop=(e,col)=>{
@@ -1532,10 +1631,10 @@ function App(){
 
   const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,fontSize:settings.fontSize||14,allCats:managedCats};
 
-  if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-e'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
-  if(!user)return <div className={settings.theme||'theme-e'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
+  if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
+  if(!user)return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
   if(loading)return(
-    <div className={settings.theme||'theme-e'} style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg)',flexDirection:'column',gap:'16px'}}>
+    <div className={settings.theme||'theme-foundry'} style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg)',flexDirection:'column',gap:'16px'}}>
       <div className="spinner" style={{width:'28px',height:'28px',borderWidth:'3px'}}/>
       <div style={{fontSize:'13px',fontFamily:'DM Mono,monospace',color:'var(--text2)'}}>Loading tasks from Sheets...</div>
     </div>
@@ -1544,13 +1643,15 @@ function App(){
   const NAV=[{k:'board',icon:'⊞',label:'Board'},{k:'log',icon:'📋',label:'History'},{k:'scores',icon:'🏆',label:'Scores'},{k:'settings',icon:'⚙️',label:'Settings'}];
 
   return(
-    <div className={`app ${settings.theme||'theme-e'}`} onClick={()=>showMenu&&setShowMenu(false)}>
+    <div className={`app ${settings.theme||'theme-foundry'}`} onClick={()=>showMenu&&setShowMenu(false)}>
       {/* TOPBAR */}
       <div className="topbar">
         <div className="tb-badge">BV</div>
         <span className="tb-logo">Bagavagabonds</span>
         <div className="tb-sep"/>
         <span className="tb-sub">Warehouse Ops</span>
+        <div className="tb-sep"/>
+        <span className="tb-sub" title={`${DAY_LABELS[new Date().getDay()]} hours`}>{todayHours(hours)}</span>
         <div className="tb-right">
           {syncing?<div className="sync-row"><div className="spinner"/><span>syncing</span></div>:config?.sheetId?<div className="sync-row"><div className="sync-dot"/><span>synced</span></div>:null}
           {NAV.map(v=>(<button key={v.k} className={`tb-tab${view===v.k?' active':''}`} onClick={()=>setView(v.k)}>{v.icon} {v.label}</button>))}
@@ -1660,7 +1761,7 @@ function App(){
 
       {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config}/></div>}
       {view==='scores'&&<div style={{flex:1,overflowY:'auto'}}><ScoresView tasks={tasks} manualBadges={manualBadges} demerits={demerits}/></div>}
-      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite}/></div>}
+      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={setHours}/></div>}
 
       {/* MOBILE NAV */}
       <nav className="mobile-nav">
