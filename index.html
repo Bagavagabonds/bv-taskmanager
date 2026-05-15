@@ -607,6 +607,46 @@ async function sheetLoad(cfg){
     return tasks.filter(t=>t.id);
   }catch(e){console.warn('sheet load error',e);return[];}
 }
+// ── APP CONFIG (small key/value sheet for shared app state like hours) ──
+async function ensureConfigSheet(cfg){
+  try{
+    const d=await sheetsReq(cfg,'GET','/values/Config!A1:B1');
+    if(d.values?.[0]?.[0]==='key')return true;
+  }catch(e){
+    // Sheet tab probably missing — try to create it
+    try{ await sheetsReq(cfg,'POST',':batchUpdate',{requests:[{addSheet:{properties:{title:'Config'}}}]}); }
+    catch(e2){ /* already exists or other error — fall through */ }
+  }
+  try{ await sheetsReq(cfg,'PUT','/values/Config!A1:B1?valueInputOption=RAW',{values:[['key','value']]}); return true; }
+  catch(e){ return false; }
+}
+async function loadAppConfig(cfg){
+  try{
+    await ensureConfigSheet(cfg);
+    const d=await sheetsReq(cfg,'GET','/values/Config!A:B');
+    if(!d.values)return{};
+    const out={};
+    for(const row of d.values.slice(1)){
+      if(row[0]&&row[1]!=null){
+        try{ out[row[0]]=JSON.parse(row[1]); }
+        catch{ out[row[0]]=row[1]; }
+      }
+    }
+    return out;
+  }catch(e){ console.warn('config load',e); return{}; }
+}
+async function saveAppConfigKey(cfg,key,value){
+  await ensureConfigSheet(cfg);
+  const d=await sheetsReq(cfg,'GET','/values/Config!A:A');
+  const rowIdx=d.values?d.values.findIndex(r=>r[0]===key):-1;
+  const val=typeof value==='string'?value:JSON.stringify(value);
+  if(rowIdx>0){
+    await sheetsReq(cfg,'PUT',`/values/Config!A${rowIdx+1}:B${rowIdx+1}?valueInputOption=RAW`,{values:[[key,val]]});
+  }else{
+    await sheetsReq(cfg,'POST','/values/Config!A:B:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{values:[[key,val]]});
+  }
+}
+
 async function sendEmail(cfg,task){
   if(!cfg.accessToken||!task.assignedToEmail)return;
   try{
@@ -1353,6 +1393,7 @@ function App(){
   const pollRef=useRef(null);
   const configRef=useRef(config);
   const deletedIdsRef=useRef(deletedIds);
+  const pushingHoursRef=useRef(false);
   useEffect(()=>{configRef.current=config;},[config]);
   useEffect(()=>{deletedIdsRef.current=deletedIds;},[deletedIds]);
 
@@ -1510,6 +1551,20 @@ function App(){
   const handleSaveProjects=(client,list)=>setProjects(prev=>({...prev,[client]:list}));
   const handleAddUser=(name,email)=>{if(!allTeam.find(t=>t.email===email))setCustomTeam(prev=>[...prev,{name,email}]);};
 
+  const handleHoursChange=async(newHours)=>{
+    setHours(newHours);
+    if(!config?.accessToken)return;
+    pushingHoursRef.current=true;
+    try{
+      await saveAppConfigKey(configRef.current,'hours',newHours);
+    }catch(e){
+      showToast('Hours saved locally — sheet sync failed','error');
+    }finally{
+      // Small delay so an in-flight poll doesn't overwrite us between push and refetch
+      setTimeout(()=>{pushingHoursRef.current=false;},1500);
+    }
+  };
+
   const doRefresh=async(cfg,silent=false)=>{
     if(!cfg?.accessToken||!cfg?.sheetId)return;
     if(!silent)setRefreshing(true);
@@ -1547,6 +1602,13 @@ function App(){
         if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks`,'success');
       }else{
         if(!silent)showToast('Sheet appears empty — keeping local data','');
+      }
+      // Pull shared app-config (hours, etc.) — skip if we're mid-push to avoid clobbering local edits
+      if(!pushingHoursRef.current){
+        try{
+          const appCfg=await loadAppConfig(cfg);
+          if(appCfg.hours&&typeof appCfg.hours==='object')setHours(appCfg.hours);
+        }catch(e){/* ignore */}
       }
     }catch{if(!silent)showToast('Refresh failed','error');}
     if(!silent)setRefreshing(false);
@@ -1761,7 +1823,7 @@ function App(){
 
       {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config}/></div>}
       {view==='scores'&&<div style={{flex:1,overflowY:'auto'}}><ScoresView tasks={tasks} manualBadges={manualBadges} demerits={demerits}/></div>}
-      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={setHours}/></div>}
+      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange}/></div>}
 
       {/* MOBILE NAV */}
       <nav className="mobile-nav">
