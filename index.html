@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Bagavagabonds · Task Board</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+/* ── THEMES ── */
+/* Panther — smoky jazz, coral salmon + molten gold */
+.theme-e{--bg:#110808;--bg2:#1a0d0a;--bg3:#231210;--bg4:#2e1812;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--text:#f0dcc8;--text2:rgba(240,220,200,0.72);--text3:rgba(240,220,200,0.42);--crimson:#a83828;--crimson2:#862818;--crimson-dim:rgba(168,56,40,0.32);--amber:#d4a820;--amber-dim:rgba(212,168,32,0.18);--board-bg:radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px);--board-size:20px 20px;}
+/* Dusk — deep navy/indigo, single amber leaf, still + moody */
+.theme-c{--bg:#131320;--bg2:#0e0e1a;--bg3:#181828;--bg4:#202034;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#d8d8f0;--text2:rgba(216,216,240,0.72);--text3:rgba(216,216,240,0.42);--crimson:#383898;--crimson2:#282878;--crimson-dim:rgba(56,56,152,0.28);--amber:#d49038;--amber-dim:rgba(212,144,56,0.16);--board-bg:radial-gradient(rgba(255,255,255,0.02) 1px,transparent 1px);--board-size:20px 20px;}
+/* Soleil — golden hour warmth, amber parchment, burnt sienna + deep gold */
+.theme-cream{--bg:#f8e8c0;--bg2:#f0dca8;--bg3:#f4e2b4;--bg4:#e8d098;--border:rgba(80,38,6,0.13);--border2:rgba(80,38,6,0.25);--text:#2c1400;--text2:rgba(44,20,0,0.70);--text3:rgba(44,20,0,0.42);--crimson:#c04010;--crimson2:#9c3008;--crimson-dim:rgba(192,64,16,0.13);--amber:#c87c08;--amber-dim:rgba(200,124,8,0.14);--board-bg:radial-gradient(rgba(0,0,0,0.05) 1px,transparent 1px);--board-size:20px 20px;}
+/* Ravine — pitch dark teal, blood-red cliffs, warm parchment */
+.theme-fern{--bg:#060e0e;--bg2:#0a1614;--bg3:#0e1c1a;--bg4:#142622;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--text:#c8dcd4;--text2:rgba(200,220,212,0.72);--text3:rgba(200,220,212,0.42);--crimson:#8a1818;--crimson2:#6a1010;--crimson-dim:rgba(138,24,24,0.38);--amber:#d4a870;--amber-dim:rgba(212,168,112,0.18);--board-bg:radial-gradient(rgba(255,255,255,0.016) 1px,transparent 1px);--board-size:20px 20px;}
+/* Jaguar — deep jungle, amber fur, primal shadow */
+.theme-jaguar{--bg:#090f08;--bg2:#0d1610;--bg3:#121c14;--bg4:#1a2a1c;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--text:#d0e4c0;--text2:rgba(208,228,192,0.72);--text3:rgba(208,228,192,0.42);--crimson:#3a6c28;--crimson2:#2c5420;--crimson-dim:rgba(58,108,40,0.32);--amber:#c4843a;--amber-dim:rgba(196,132,58,0.16);--board-bg:radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px);--board-size:20px 20px;}
+/* Sunfield — midnight blue sky, golden sunflower, warm pixel glow */
+.theme-sunfield{--bg:#0c1824;--bg2:#10202e;--bg3:#142838;--bg4:#1a3044;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#f8f0d8;--text2:rgba(248,240,216,0.72);--text3:rgba(248,240,216,0.42);--crimson:#4878b8;--crimson2:#386098;--crimson-dim:rgba(72,120,184,0.28);--amber:#e8a830;--amber-dim:rgba(232,168,48,0.16);--board-bg:radial-gradient(rgba(255,255,255,0.022) 1px,transparent 1px);--board-size:20px 20px;}
+/* Atelier — hunter teal walls, warm bamboo wood, artisan craft */
+.theme-atelier{--bg:#081412;--bg2:#0c1c18;--bg3:#10221e;--bg4:#162c28;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#d4e8e0;--text2:rgba(212,232,224,0.72);--text3:rgba(212,232,224,0.42);--crimson:#2a6050;--crimson2:#1e4840;--crimson-dim:rgba(42,96,80,0.32);--amber:#c8a870;--amber-dim:rgba(200,168,112,0.16);--board-bg:radial-gradient(rgba(255,255,255,0.018) 1px,transparent 1px);--board-size:20px 20px;}
+/* Foundry — charcoal black, burnished bronze, dusty patina teal */
+.theme-foundry{--bg:#0a0c0c;--bg2:#101414;--bg3:#141a1a;--bg4:#1c2222;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#d4c8b0;--text2:rgba(212,200,176,0.72);--text3:rgba(212,200,176,0.42);--crimson:#4a7878;--crimson2:#385e5e;--crimson-dim:rgba(74,120,120,0.28);--amber:#a06838;--amber-dim:rgba(160,104,56,0.16);--board-bg:radial-gradient(rgba(255,255,255,0.016) 1px,transparent 1px);--board-size:20px 20px;}
+
+html,body{background:var(--bg);transition:background 0.3s;}
+body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-height:1.5;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+
+/* ── AUTH ── */
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden;}
+.auth-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px);background-size:22px 22px;pointer-events:none;}
+.auth-card{position:relative;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:48px 52px;width:min(420px,90vw);text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.5);}
+.auth-badge{width:44px;height:44px;border-radius:50%;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#f5c5a3;margin:0 auto 22px;box-shadow:0 2px 10px rgba(0,0,0,0.4);}
+.auth-title{font-size:24px;font-weight:800;margin-bottom:10px;}
+.auth-sub{font-size:13px;color:var(--text2);margin-bottom:34px;line-height:1.6;font-family:'DM Mono',monospace;}
+.auth-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--crimson);color:#f5c5a3;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;border:none;border-radius:8px;padding:14px 24px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.35);}
+.auth-btn:hover{background:var(--crimson2);}
+.auth-note{margin-top:16px;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
+
+/* ── APP ── */
+.app{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:10px;padding:0 20px;height:52px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100;}
+.tb-badge{width:26px;height:26px;border-radius:50%;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#f5c5a3;flex-shrink:0;box-shadow:0 1px 5px rgba(0,0,0,0.4);}
+.tb-logo{font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--text);}
+.tb-sep{width:1px;height:16px;background:var(--border2);}
+.tb-sub{font-size:9px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:7px;}
+.tb-tab{font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:5px 12px;border-radius:5px;border:1px solid transparent;cursor:pointer;background:transparent;color:var(--text3);font-family:'Syne',sans-serif;transition:all 0.12s;}
+.tb-tab:hover{color:var(--text2);background:var(--bg3);}
+.tb-tab.active{background:var(--crimson-dim);color:var(--amber);border-color:var(--amber-dim);}
+.new-btn{display:flex;align-items:center;gap:6px;background:var(--amber);color:#1a0e0e;font-family:'Syne',sans-serif;font-weight:800;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;border:none;border-radius:5px;padding:6px 13px;cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,0.25);}
+.new-btn:hover{opacity:0.88;}
+.sync-row{display:flex;align-items:center;gap:5px;font-size:9px;font-family:'DM Mono',monospace;color:var(--text3);}
+.sync-dot{width:5px;height:5px;border-radius:50%;background:#4a8a4a;}
+.spinner{width:11px;height:11px;border:1.5px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.tb-av{width:28px;height:28px;border-radius:50%;background:var(--bg4);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--amber);font-family:'DM Mono',monospace;cursor:pointer;position:relative;flex-shrink:0;}
+.user-menu{position:absolute;top:36px;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:4px;min-width:200px;z-index:300;box-shadow:0 6px 20px rgba(0,0,0,0.5);}
+.user-info{padding:11px 13px 9px;border-bottom:1px solid var(--border);margin-bottom:4px;}
+.user-name{font-size:13px;font-weight:700;}
+.user-email{font-size:10px;color:var(--text2);font-family:'DM Mono',monospace;}
+.user-role{display:inline-block;font-size:9px;font-family:'DM Mono',monospace;padding:2px 7px;border-radius:3px;margin-top:5px;background:var(--crimson-dim);color:var(--amber);border:1px solid var(--amber-dim);}
+.menu-item{display:block;width:100%;text-align:left;padding:8px 13px;border-radius:5px;font-size:13px;color:var(--text2);background:transparent;border:none;cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.1s;}
+.menu-item:hover{background:var(--bg3);color:var(--text);}
+.menu-item.danger:hover{color:#f08080;}
+
+/* ── BODY LAYOUT ── */
+.body-layout{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:130px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:16px 12px;overflow-y:auto;}
+.cal-mo{font-size:9px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;font-family:'DM Mono',monospace;}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;}
+.cdn{font-size:7px;font-family:'DM Mono',monospace;color:var(--text3);text-align:center;padding-bottom:3px;}
+.cdd{font-size:8px;font-family:'DM Mono',monospace;color:var(--text3);text-align:center;padding:2px 0;border-radius:2px;}
+.cdd.today{background:var(--crimson);color:#f5c5a3;font-weight:700;}
+.cdd.has-task{color:var(--amber);}
+.cdd.empty{opacity:0;}
+.slabel{font-size:8px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-top:14px;margin-bottom:8px;font-family:'DM Mono',monospace;}
+.devent{margin-bottom:8px;}
+.devdot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.devtxt{font-size:9px;color:var(--text2);font-family:'DM Mono',monospace;line-height:1.3;}
+.devdate{font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;padding-left:9px;}
+.sstat{font-size:22px;font-weight:800;line-height:1.1;margin-top:12px;color:var(--text);}
+.ssub{font-size:8px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:5px;}
+
+/* ── VIEW CONTROLS BAR ── */
+.view-controls{display:flex;align-items:center;gap:8px;padding:10px 16px 6px;flex-shrink:0;}
+.toggle-group{display:flex;background:var(--bg3);border-radius:6px;border:1px solid var(--border2);overflow:hidden;}
+.toggle-btn{font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:6px 12px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-family:'Syne',sans-serif;transition:all 0.12s;white-space:nowrap;}
+.toggle-btn.active{background:var(--crimson);color:#f5c5a3;}
+.toggle-btn.active.mine{background:var(--amber);color:#1a0e0e;}
+.vc-sep{width:1px;height:20px;background:var(--border2);}
+
+/* ── BOARD ── */
+.board-wrap{flex:1;overflow-y:auto;overflow-x:hidden;}
+.board{padding:10px 16px 80px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;background-image:var(--board-bg);background-size:var(--board-size);min-height:100%;}
+.col-wrap{min-height:80px;border-radius:8px;transition:background 0.15s;padding:3px;}
+.col-wrap.drag-over{background:var(--amber-dim);}
+.col-head{display:flex;align-items:center;gap:6px;padding-bottom:10px;margin-bottom:5px;border-bottom:1px solid var(--border);}
+.cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.clabel{font-size:9px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--text2);}
+.ccount{margin-left:auto;font-size:9px;font-family:'DM Mono',monospace;background:rgba(255,255,255,0.05);border-radius:10px;padding:1px 7px;color:var(--text3);}
+.col-body{display:flex;flex-direction:column;gap:9px;}
+.col-empty{border:1px dashed var(--border2);border-radius:8px;padding:24px 14px;text-align:center;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
+
+/* ── TASK CARD ── */
+.note{border-radius:3px;padding:13px 14px 11px;position:relative;cursor:grab;box-shadow:1px 2px 9px rgba(0,0,0,0.42),0 1px 3px rgba(0,0,0,0.28);transition:box-shadow 0.15s,transform 0.15s;}
+.note:hover{box-shadow:3px 6px 20px rgba(0,0,0,0.52),0 2px 6px rgba(0,0,0,0.32);transform:scale(1.016) rotate(0deg) !important;}
+.note:active{cursor:grabbing;}
+.note::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:rgba(10,5,5,0.5);border:1.5px solid rgba(10,5,5,0.22);box-shadow:0 1px 4px rgba(0,0,0,0.5);}
+.n-y{background:#f2e49a;}.n-o{background:#f5cc90;}.n-g{background:#c2e098;}.n-b{background:#a2cff0;}.n-pk{background:#f0b0c8;}.n-pu{background:#cab8f2;}
+.r1{transform:rotate(-1.1deg);}.r2{transform:rotate(0.7deg);}.r3{transform:rotate(-0.4deg);}.r4{transform:rotate(1.2deg);}
+.note.is-done{opacity:0.45;}
+.note.is-done .ntitle{text-decoration:line-through;}
+.nprio-badge{position:absolute;top:9px;right:11px;font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;}
+.nph{background:rgba(122,28,28,0.14);color:#7a1c1c;}.npm{background:rgba(160,100,0,0.14);color:#6e4600;}.npl{background:rgba(40,80,15,0.14);color:#285014;}
+.ncat{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(20,10,10,0.45);margin-bottom:5px;font-family:'DM Mono',monospace;}
+.ntitle{font-size:14px;font-weight:700;color:#1a0e0e;line-height:1.3;margin-bottom:4px;padding-right:44px;}
+.ndesc{font-size:11.5px;color:rgba(20,10,10,0.6);line-height:1.45;margin-bottom:7px;}
+.ndl{font-size:9px;font-family:'DM Mono',monospace;color:#7a1c1c;margin-bottom:6px;}
+.ndl.overdue{color:#cc0000;font-weight:700;}
+.ntimer{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#7a1c1c;margin-top:6px;font-weight:500;}
+.npulse{width:5px;height:5px;border-radius:50%;background:#7a1c1c;animation:pp 1.2s infinite;}
+@keyframes pp{0%,100%{opacity:1;}50%{opacity:0.2;}}
+.npaused{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(20,10,10,0.5);margin-top:6px;}
+.done-log{font-size:9px;font-family:'DM Mono',monospace;color:rgba(20,10,10,0.5);margin-top:6px;}
+.nbtns{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+.nbtn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:rgba(20,10,10,0.1);border:1px solid rgba(20,10,10,0.12);border-radius:3px;padding:4px 9px;cursor:pointer;font-family:'Syne',sans-serif;color:#1a0e0e;transition:background 0.1s;}
+.nbtn:hover{background:rgba(20,10,10,0.18);}
+.nbtn.danger{background:rgba(122,28,28,0.1);color:#7a1c1c;border-color:rgba(122,28,28,0.15);}
+.nbtn.danger:hover{background:rgba(122,28,28,0.2);}
+.nbtn.comment{background:rgba(20,10,10,0.07);color:rgba(20,10,10,0.55);}
+.by-line{font-size:9px;color:rgba(20,10,10,0.38);font-family:'DM Mono',monospace;margin-top:7px;}
+.pts-badge{display:inline-flex;align-items:center;font-size:9px;font-family:'DM Mono',monospace;background:rgba(20,10,10,0.08);border-radius:3px;padding:2px 6px;color:rgba(20,10,10,0.5);margin-top:4px;}
+
+/* ── LIST VIEW ── */
+.list-view{padding:4px 16px 80px;display:flex;flex-direction:column;gap:0;}
+.list-section-head{display:flex;align-items:center;gap:8px;padding:14px 4px 8px;position:sticky;top:0;background:var(--bg);z-index:10;}
+.list-section-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.list-section-label{font-size:10px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--text2);}
+.list-section-count{font-size:9px;font-family:'DM Mono',monospace;background:rgba(255,255,255,0.06);border-radius:10px;padding:1px 8px;color:var(--text3);}
+.list-row{background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden;transition:border-color 0.15s;}
+.list-row:hover{border-color:var(--border2);}
+.list-row-main{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;min-height:48px;}
+.lr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.lr-title{font-size:13px;font-weight:700;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lr-title.is-done{text-decoration:line-through;opacity:0.5;}
+.lr-assignee{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lr-comment-badge{display:flex;align-items:center;gap:3px;font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);flex-shrink:0;}
+.lr-expand{font-size:10px;color:var(--text3);flex-shrink:0;transition:transform 0.15s;}
+.lr-expand.open{transform:rotate(180deg);}
+.list-row-detail{padding:0 14px 12px;border-top:1px solid var(--border);background:var(--bg3);}
+.lrd-desc{font-size:12px;color:var(--text2);line-height:1.5;padding:10px 0 8px;font-family:'DM Mono',monospace;}
+.lrd-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.lrd-tag{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);background:var(--bg4);border-radius:4px;padding:2px 8px;}
+.lrd-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.lrd-btn{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:var(--crimson-dim);border:1px solid rgba(255,255,255,0.06);border-radius:5px;padding:6px 12px;cursor:pointer;font-family:'Syne',sans-serif;color:var(--text);transition:background 0.1s;}
+.lrd-btn:hover{background:var(--bg4);}
+.lrd-btn.primary{background:var(--amber);color:#1a0e0e;border-color:transparent;}
+.lrd-btn.primary:hover{opacity:0.88;}
+.lrd-btn.danger{background:rgba(200,60,60,0.1);color:#f08080;border-color:rgba(200,60,60,0.15);}
+.lrd-btn.danger:hover{background:rgba(200,60,60,0.2);}
+.lrd-timer{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);margin-bottom:8px;font-weight:600;}
+
+/* ── COMMENT DRAWER ── */
+.comment-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:flex-end;justify-content:center;}
+.comment-drawer{background:var(--bg2);border:1px solid var(--border2);border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 -8px 30px rgba(0,0,0,0.5);}
+.comment-header{padding:16px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.comment-task-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.comment-sub{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);}
+.comment-close{float:right;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:0 0 0 10px;}
+.comment-list{flex:1;overflow-y:auto;padding:14px 20px;display:flex;flex-direction:column;gap:12px;}
+.comment-empty{text-align:center;padding:32px;font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;font-style:italic;}
+.comment-item{display:flex;flex-direction:column;gap:3px;}
+.comment-meta{display:flex;align-items:center;gap:8px;}
+.comment-av{width:22px;height:22px;border-radius:50%;background:var(--crimson-dim);border:1px solid var(--amber-dim);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--amber);font-family:'DM Mono',monospace;flex-shrink:0;}
+.comment-author{font-size:11px;font-weight:700;color:var(--text);}
+.comment-time{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);}
+.comment-text{font-size:12px;color:var(--text2);line-height:1.5;padding-left:30px;font-family:'DM Mono',monospace;}
+.comment-input-row{padding:12px 20px 20px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:10px;align-items:flex-end;}
+.comment-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 14px;outline:none;resize:none;min-height:42px;max-height:100px;}
+.comment-input:focus{border-color:var(--amber);}
+.comment-post-btn{background:var(--amber);color:#1a0e0e;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;border:none;border-radius:7px;padding:10px 16px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.comment-post-btn:disabled{opacity:0.4;cursor:default;}
+
+/* ── MOBILE NAV ── */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:62px;background:var(--bg2);border-top:1px solid var(--border2);z-index:200;align-items:stretch;}
+.mobile-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;color:var(--text3);transition:color 0.12s;padding:0;-webkit-tap-highlight-color:transparent;}
+.mobile-nav-btn.active{color:var(--amber);}
+.mobile-nav-icon{font-size:18px;line-height:1;}
+.mobile-nav-label{font-size:8px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;font-family:'DM Mono',monospace;}
+.mobile-fab{display:none;position:fixed;bottom:76px;right:18px;width:52px;height:52px;border-radius:50%;background:var(--amber);color:#1a0e0e;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center;font-weight:300;-webkit-tap-highlight-color:transparent;}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);display:flex;align-items:center;justify-content:center;z-index:400;padding:24px;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:28px 32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.6);}
+.modal-title{font-size:18px;font-weight:800;margin-bottom:24px;}
+.modal-title span{color:var(--amber);}
+.field{margin-bottom:16px;position:relative;}
+.field label{display:block;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text2);margin-bottom:6px;font-family:'DM Mono',monospace;}
+.field input,.field textarea,.field select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;padding:10px 14px;outline:none;transition:border-color 0.12s;}
+.field textarea{resize:vertical;min-height:75px;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--amber);}
+.field select option{background:var(--bg2);}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-actions{display:flex;gap:9px;margin-top:22px;justify-content:flex-end;}
+.btn-cancel{background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text2);font-family:'Syne',sans-serif;font-size:13px;font-weight:600;padding:9px 20px;cursor:pointer;}
+.btn-cancel:hover{background:var(--bg3);}
+.btn-post{background:var(--amber);color:#1a0e0e;border:none;border-radius:6px;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;padding:9px 20px;cursor:pointer;}
+.btn-post:hover{opacity:0.88;}
+.btn-post:disabled{opacity:0.4;cursor:default;}
+
+/* ── AUTOCOMPLETE ── */
+.ac-list{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;z-index:50;box-shadow:0 6px 16px rgba(0,0,0,0.5);overflow:hidden;margin-top:2px;}
+.ac-item{padding:9px 14px;cursor:pointer;transition:background 0.1s;}
+.ac-item:hover,.ac-item.sel{background:var(--bg3);}
+.ac-name{font-size:12px;font-weight:600;color:var(--text);}
+.ac-email{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;}
+
+/* ── LOG ── */
+.log-view{padding:24px 28px;max-width:1100px;margin:0 auto;width:100%;padding-bottom:80px;}
+.log-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.log-header h2{font-size:20px;font-weight:800;}
+.log-header p{font-size:12px;color:var(--text2);margin-top:2px;font-family:'DM Mono',monospace;}
+.log-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:15px 17px;box-shadow:0 2px 8px rgba(0,0,0,0.15);}
+.stat-label{font-size:9px;font-family:'DM Mono',monospace;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+.stat-val{font-size:22px;font-weight:800;color:var(--text);}
+.log-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.15);overflow-x:auto;}
+.log-table{width:100%;border-collapse:collapse;min-width:600px;}
+.log-table th{text-align:left;padding:10px 16px;font-size:9px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);border-bottom:1px solid var(--border);background:var(--bg3);}
+.log-table td{padding:11px 16px;font-size:12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+.log-table tr:last-child td{border-bottom:none;}
+.log-table tr:hover td{background:var(--bg3);}
+.log-table td.tname{color:var(--text);font-weight:600;font-size:13px;}
+.log-table td.tmono{font-family:'DM Mono',monospace;font-size:11px;}
+.sheets-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--amber);font-family:'DM Mono',monospace;background:var(--amber-dim);border:1px solid var(--amber-dim);border-radius:6px;padding:6px 13px;cursor:pointer;text-decoration:none;}
+.no-tasks-msg{text-align:center;padding:52px 24px;font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;}
+
+/* ── SCORES ── */
+.scores-view{padding:24px 28px;max-width:1100px;margin:0 auto;width:100%;padding-bottom:80px;}
+.scores-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.scores-header h2{font-size:20px;font-weight:800;}
+.month-label{font-size:11px;font-family:'DM Mono',monospace;color:var(--text2);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:5px 12px;}
+.leaderboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px;}
+.player-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,0,0,0.2);position:relative;}
+.player-card.rank-1{border-color:rgba(245,200,48,0.4);background:linear-gradient(135deg,var(--bg2),rgba(245,200,48,0.04));}
+.player-card.rank-2{border-color:rgba(192,192,192,0.3);}
+.player-card.rank-3{border-color:rgba(205,127,50,0.3);}
+.player-rank{position:absolute;top:14px;right:16px;font-size:22px;}
+.player-av{width:44px;height:44px;border-radius:50%;background:var(--crimson-dim);border:2px solid var(--amber-dim);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--amber);font-family:'DM Mono',monospace;margin-bottom:10px;}
+.player-name{font-size:16px;font-weight:800;margin-bottom:2px;}
+.player-pts{font-size:28px;font-weight:800;color:var(--amber);line-height:1;}
+.player-pts-label{font-size:9px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:10px;}
+.player-stats{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.pstat{font-size:10px;font-family:'DM Mono',monospace;color:var(--text2);}
+.pstat span{color:var(--text);font-weight:600;}
+.badges-row{display:flex;gap:6px;flex-wrap:wrap;}
+.badge{font-size:16px;cursor:default;position:relative;}
+.badge-tip{display:none;position:absolute;bottom:120%;left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border2);border-radius:5px;padding:4px 8px;font-size:10px;white-space:nowrap;color:var(--text);font-family:'DM Mono',monospace;z-index:10;}
+.badge:hover .badge-tip{display:block;}
+
+/* ── SETTINGS ── */
+.settings-view{padding:24px 28px;max-width:700px;margin:0 auto;padding-bottom:80px;}
+.settings-view h2{font-size:20px;font-weight:800;}
+.settings-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:14px;}
+.settings-section h3{font-size:12px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text2);font-family:'DM Mono',monospace;margin-bottom:14px;}
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;}
+.theme-btn{border-radius:8px;padding:14px 10px;cursor:pointer;border:2px solid transparent;transition:all 0.15s;text-align:center;}
+.theme-btn.active{border-color:var(--amber);}
+.theme-preview{width:100%;height:36px;border-radius:5px;margin-bottom:8px;}
+.theme-btn-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--text2);}
+.font-row{display:flex;align-items:center;gap:14px;}
+.font-row label{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;}
+.font-slider{flex:1;accent-color:var(--amber);}
+.font-preview{font-size:13px;color:var(--text2);font-family:'DM Mono',monospace;margin-left:4px;}
+.clear-btn{background:rgba(200,60,60,0.12);color:#f08080;border:1px solid rgba(200,60,60,0.2);border-radius:6px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:8px 16px;cursor:pointer;}
+.clear-btn:hover{background:rgba(200,60,60,0.22);}
+.dev-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:14px;margin-top:32px;}
+.dev-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.dev-title{font-size:12px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;font-family:'DM Mono',monospace;}
+.admin-subsection{margin-bottom:20px;}
+.admin-sub-label{font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:12px;}
+.badge-toggle{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;cursor:pointer;transition:all 0.15s;border:1px solid var(--border);}
+.badge-toggle:hover{border-color:var(--border2);}
+.badge-toggle.on{background:var(--amber-dim);border-color:var(--amber);}
+.badge-toggle-label{font-size:11px;font-weight:700;font-family:'Syne',sans-serif;}
+.badge-toggle-sub{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:1px;}
+.demerit-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.demerit-pts{font-size:12px;font-weight:700;color:#f08080;font-family:'DM Mono',monospace;}
+.demerit-who{font-size:12px;color:var(--text);font-weight:600;}
+.demerit-reason{font-size:11px;color:var(--text2);flex:1;font-family:'DM Mono',monospace;}
+.demerit-time{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;}
+.demerit-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;}
+.demerit-del:hover{color:#f08080;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:11px 20px;font-size:13px;color:var(--text);z-index:600;animation:slideUp 0.2s ease;white-space:nowrap;box-shadow:0 5px 20px rgba(0,0,0,0.4);}
+.toast.success{border-color:rgba(74,138,74,0.4);color:#8fce8f;}
+.toast.error{border-color:rgba(200,60,60,0.4);color:#f08080;}
+@keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+/* ── CHA-CHING ── */
+.chaching-overlay{position:fixed;inset:0;pointer-events:none;z-index:700;overflow:hidden;}
+.coin{position:absolute;font-size:26px;animation:fly 1.6s ease-out forwards;}
+.bill{position:absolute;font-size:20px;animation:fly 1.8s ease-out forwards;}
+.chaching-text{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-family:'Syne',sans-serif;font-size:42px;font-weight:800;color:#f5c830;text-shadow:0 2px 20px rgba(0,0,0,0.6);animation:chaText 2.2s ease-out forwards;white-space:nowrap;}
+@keyframes fly{0%{opacity:1;transform:translate(0,0) rotate(0deg);}100%{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(var(--rot));}}
+@keyframes chaText{0%{opacity:0;transform:translate(-50%,-50%) scale(0.3);}15%{opacity:1;transform:translate(-50%,-50%) scale(1.25);}30%{transform:translate(-50%,-50%) scale(1);}75%{opacity:1;}100%{opacity:0;transform:translate(-50%,-68%) scale(0.88);}}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 767px) {
+  .sidebar{display:none;}
+  .tb-tab{display:none;}
+  .new-btn{display:none;}
+  .tb-sub{display:none;}
+  .tb-sep{display:none;}
+  .board{grid-template-columns:1fr;padding:8px 12px 80px;}
+  .mobile-nav{display:flex;}
+  .mobile-fab{display:flex;}
+  .topbar{padding:0 14px;height:48px;}
+  .tb-logo{font-size:10px;}
+  .modal-overlay{padding:0;align-items:flex-end;}
+  .modal{border-radius:20px 20px 0 0;max-height:88vh;padding:22px 20px;}
+  .log-stats{grid-template-columns:repeat(2,1fr);}
+  .theme-grid{grid-template-columns:repeat(2,1fr);}
+  .view-controls{padding:6px 12px 4px;flex-wrap:wrap;gap:5px;}
+  .vc-sep{display:none;}
+  .sort-select{display:none;}
+  .vc-status{order:10;flex:1 0 100%;}
+  .vc-status .toggle-btn{flex:1;text-align:center;}
+  .vc-count{display:none;}
+  .list-view{padding:4px 12px 80px;}
+}
+@media (min-width:768px){
+  .toast{bottom:22px;}
+}
+.sort-select{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);font-family:'DM Mono',monospace;font-size:9px;padding:5px 8px;outline:none;cursor:pointer;transition:border-color 0.12s;}
+.sort-select:focus{border-color:var(--amber);}
+.trash-done-btn{background:none;border:none;cursor:pointer;font-size:13px;padding:2px 5px;border-radius:3px;color:var(--text3);line-height:1;transition:color 0.12s;}
+.trash-done-btn:hover{color:#f08080;}
+.refresh-btn{display:flex;align-items:center;gap:4px;background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text3);font-family:'DM Mono',monospace;font-size:9px;padding:5px 9px;cursor:pointer;transition:all 0.12s;}
+.refresh-btn:hover{color:var(--text);border-color:var(--amber);}
+.refresh-btn:disabled{opacity:0.5;cursor:default;}
+
+/* ── PRIORITY INTENSITY FILTERS ── */
+.note.prio-high{filter:saturate(2.0) brightness(0.84);}
+.note.prio-low{filter:saturate(0.38) brightness(1.20);}
+
+/* ── COLOR PICKER ── */
+.color-picker-row{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0;}
+.color-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:all 0.12s;outline:none;box-shadow:0 1px 4px rgba(0,0,0,0.25);}
+.color-swatch.selected{border-color:var(--text);transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,0,0.4);}
+.color-swatch:hover:not(.selected){transform:scale(1.1);}
+
+/* ── LIST EDITOR ── */
+.le-wrap{border:1px solid var(--border2);border-radius:7px;overflow:hidden;margin-top:4px;max-height:220px;overflow-y:auto;}
+.le-row{display:flex;align-items:center;gap:6px;padding:8px 11px;border-bottom:1px solid var(--border);}
+.le-row:last-child{border-bottom:none;}
+.le-label{flex:1;font-size:12px;color:var(--text);}
+.le-icon{background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);padding:2px 4px;border-radius:3px;transition:color 0.1s;}
+.le-icon:hover{color:var(--text);}
+.le-icon.del:hover{color:#f08080;}
+.le-add{display:flex;gap:6px;margin-top:7px;}
+.le-edit-lbl{display:flex;align-items:center;gap:6px;}
+.le-edit-btn{background:none;border:none;cursor:pointer;font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;padding:0;text-decoration:underline;white-space:nowrap;}
+.le-edit-btn:hover{color:var(--amber);}
+.le-back{background:none;border:none;cursor:pointer;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:14px;display:flex;align-items:center;gap:4px;}
+.le-back:hover{color:var(--text);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const CONFIG_KEY         = 'bvb_config_v3';
+const TASKS_KEY          = 'bvb_tasks_v3';
+const SETTINGS_KEY       = 'bvb_settings_v3';
+const BADGES_KEY         = 'bvb_badges_v3';
+const DEMERITS_KEY       = 'bvb_demerits_v3';
+const ADMIN_PIN_KEY      = 'bvb_admin_pin';
+const CUSTOM_CATS_KEY    = 'bvb_custom_cats_v1';
+const PROJECTS_KEY       = 'bvb_projects_v1';
+const CUSTOM_CLIENTS_KEY = 'bvb_custom_clients_v1';
+const CUSTOM_TEAM_KEY    = 'bvb_custom_team_v1';
+const MANAGED_CLIENTS_KEY= 'bvb_clients_v2';
+const MANAGED_CATS_KEY   = 'bvb_cats_v2';
+const DELETED_IDS_KEY    = 'bvb_deleted_v1';
+const DEFAULT_PIN        = '1234';
+
+const NOTE_COLOR_OPTIONS = [
+  {id:'n-y', hex:'#f2e49a', label:'Yellow'},
+  {id:'n-o', hex:'#f5cc90', label:'Peach'},
+  {id:'n-g', hex:'#c2e098', label:'Green'},
+  {id:'n-b', hex:'#a2cff0', label:'Blue'},
+  {id:'n-pk',hex:'#f0b0c8', label:'Pink'},
+  {id:'n-pu',hex:'#cab8f2', label:'Purple'},
+];
+
+const HARDCODED_CONFIG = {
+  clientId: '630423801494-aetvklr9sjscvscpe4tlcrlpuh5j7ccm.apps.googleusercontent.com',
+  sheetId:  '1g4z73WCjXA2vC-YIh-GVA94S49cm40rqmQFJaQI_l-M',
+};
+
+const TEAM = [
+  {name:'Cam',     email:'cam@bagavagabonds.com'},
+  {name:'Matt',    email:'matt@bagavagabonds.com'},
+  {name:'Alicia',  email:'alicia@bagavagabonds.com'},
+  {name:'Eli',     email:'eli@bagavagabonds.com'},
+  {name:'Izzy',    email:'izzy@bagavagabonds.com'},
+  {name:'Alana',   email:'alana@bagavagabonds.com'},
+  {name:'Josh',    email:'josh@bagavagabonds.com'},
+  {name:'Ian',     email:'ian@bagavagabonds.com'},
+  {name:'Mika',    email:'mika@bagavagabonds.com'},
+  {name:'Tshombe', email:'tshombebaker@gmail.com'},
+  {name:'Greg',    email:'greg@bagavagabonds.com'},
+  {name:'Rachelle',email:'rachelle@bagavagabonds.com'},
+  {name:'Maya',    email:'maya@bagavagabonds.com'},
+];
+
+const CLIENTS = [
+  'General / Internal','Stella Rosa','Spritz Del Conte','San Simeon',
+  'Riboli Family Wines','805 Firestone Walker','Sierra Nevada','Montucky',
+  'Sunnys','Tache','Yumi','Blue Zones','Blue Zones Kitchen',
+  'Venmo','Fishers Island','Waterbird','Whistle Pig','iHeart Media',
+];
+
+const CATS = [
+  {id:'move',label:'Movement'},{id:'pickup',label:'Pick Up'},{id:'dropoff',label:'Drop Off'},
+  {id:'receive',label:'Receive'},{id:'clean',label:'Maintenance'},{id:'build',label:'Setup / Build'},
+  {id:'paint',label:'Paint'},{id:'pack',label:'Pack'},{id:'check',label:'Audit / Check'},{id:'other',label:'Other'},
+];
+
+const THEMES = [
+  {id:'theme-e',        label:'Panther',  bg:'#110808', accent:'#d4a820'},
+  {id:'theme-c',        label:'Dusk',     bg:'#131320', accent:'#d49038'},
+  {id:'theme-cream',    label:'Soleil',   bg:'#f8e8c0', accent:'#c87c08'},
+  {id:'theme-fern',     label:'Ravine',   bg:'#060e0e', accent:'#d4a870'},
+  {id:'theme-jaguar',   label:'Jaguar',   bg:'#090f08', accent:'#c4843a'},
+  {id:'theme-sunfield', label:'Sunfield', bg:'#0c1824', accent:'#e8a830'},
+  {id:'theme-atelier',  label:'Atelier',  bg:'#081412', accent:'#c8a870'},
+  {id:'theme-foundry',  label:'Foundry',  bg:'#0a0c0c', accent:'#a06838'},
+];
+
+const BADGES_DEF = [
+  {id:'first',    emoji:'⭐', label:'First task done'},
+  {id:'speed',    emoji:'⚡', label:'Speed demon — under 10 min'},
+  {id:'five_day', emoji:'🔥', label:'5 tasks in one day'},
+  {id:'century',  emoji:'🏆', label:'Centurion — 100 pts total'},
+  {id:'mover',    emoji:'🚛', label:'Mover — 5 movement tasks'},
+  {id:'cleaner',  emoji:'🧹', label:'Maintenance master'},
+  {id:'receiver', emoji:'📦', label:'Receiving pro — 5 receiving tasks'},
+  {id:'builder',  emoji:'🔧', label:'Builder — 5 setup tasks'},
+  {id:'auditor',  emoji:'📋', label:'Eagle eye — 5 audit tasks'},
+  {id:'top_month',emoji:'👑', label:'Top scorer this month'},
+];
+
+const NOTE_COLS = ['n-y','n-o','n-g','n-b','n-pk','n-pu'];
+const ROTS = ['r1','r2','r3','r4','r2','r3'];
+
+function noteStyle(id,priority,noteColor){
+  const h=(id||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  if(noteColor&&noteColor.startsWith('#'))return{col:'',hex:noteColor,rot:ROTS[h%ROTS.length]};
+  const col=noteColor||(priority==='high'?['n-o','n-pk']:priority==='med'?['n-y','n-pu']:['n-g','n-b'])[h%2];
+  return{col,hex:null,rot:ROTS[h%ROTS.length]};
+}
+function initials(n){return(n||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();}
+function fmtDur(ms){if(!ms||ms<0)return'—';const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;if(h>0)return`${h}h ${m}m`;if(m>0)return`${m}m ${sec}s`;return`${sec}s`;}
+function fmtTime(ms){if(!ms)return'—';return new Date(ms).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});}
+function fmtShort(ms){if(!ms)return'';return new Date(ms).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});}
+function isOverdue(dl){return dl&&new Date(dl+'T23:59:59')<new Date();}
+function taskPts(task){return({high:3,med:2,low:1}[task.priority]||1)+(task.duration&&task.duration<600000?1:0);}
+function currentMonth(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;}
+function isMobileWidth(){return window.innerWidth<768;}
+
+function sortTasks(arr,sortBy){
+  const a=[...arr];
+  if(sortBy==='name')return a.sort((x,y)=>x.title.localeCompare(y.title));
+  if(sortBy==='priority'){const p={high:0,med:1,low:2};return a.sort((x,y)=>(p[x.priority]||1)-(p[y.priority]||1));}
+  if(sortBy==='assignee')return a.sort((x,y)=>(x.assignedTo||'').localeCompare(y.assignedTo||''));
+  return a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
+}
+
+function calcAutoBadges(name,tasks){
+  const done=tasks.filter(t=>t.completedAt&&t.assignedTo===name);
+  const badges=[];
+  if(done.length>=1)badges.push('first');
+  if(done.some(t=>t.duration&&t.duration<600000))badges.push('speed');
+  const byDay={};done.forEach(t=>{const d=new Date(t.completedAt).toDateString();byDay[d]=(byDay[d]||0)+1;});
+  if(Object.values(byDay).some(c=>c>=5))badges.push('five_day');
+  const pts=done.reduce((a,t)=>a+(t.points||0),0);
+  if(pts>=100)badges.push('century');
+  if(done.filter(t=>t.category==='move').length>=5)badges.push('mover');
+  if(done.filter(t=>t.category==='clean').length>=5)badges.push('cleaner');
+  if(done.filter(t=>t.category==='receive').length>=5)badges.push('receiver');
+  if(done.filter(t=>t.category==='build').length>=5)badges.push('builder');
+  if(done.filter(t=>t.category==='check').length>=5)badges.push('auditor');
+  return badges;
+}
+
+// ── SOUND ──────────────────────────────────────────────────────────────────
+function playSound(type){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const tone=(freq,start,dur,vol=0.3,wave='sine')=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=freq;o.type=wave;g.gain.setValueAtTime(0,ctx.currentTime+start);g.gain.linearRampToValueAtTime(vol,ctx.currentTime+start+0.01);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+start+dur);o.start(ctx.currentTime+start);o.stop(ctx.currentTime+start+dur+0.05);};
+    if(type==='post'){tone(660,0,0.12,0.3);tone(880,0.1,0.14,0.28);tone(1100,0.2,0.18,0.25);tone(1320,0.3,0.22,0.2);}
+    else if(type==='accept'){tone(200,0,0.04,0.4,'square');tone(400,0.04,0.03,0.2,'square');tone(520,0.1,0.2,0.15);}
+    else if(type==='complete'){tone(880,0,0.08,0.5);tone(1320,0.07,0.1,0.4);tone(1760,0.16,0.18,0.35);tone(2200,0.26,0.3,0.28);tone(1100,0.3,0.14,0.2);}
+    else if(type==='delete'){const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type='sine';o.frequency.setValueAtTime(520,ctx.currentTime);o.frequency.exponentialRampToValueAtTime(55,ctx.currentTime+0.22);g.gain.setValueAtTime(0.28,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.22);o.start(ctx.currentTime);o.stop(ctx.currentTime+0.25);}
+  }catch(e){}
+}
+
+// ── SHEETS ─────────────────────────────────────────────────────────────────
+async function sheetsReq(cfg,method,path,body=null){
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}${path}`,{method,headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+  if(!r.ok)throw new Error(`Sheets ${r.status}`);
+  return r.json();
+}
+async function ensureHeaders(cfg){
+  try{const d=await sheetsReq(cfg,'GET','/values/Tasks!A1:P1');if(d.values?.[0]?.[0]==='Task ID')return;}catch(e){}
+  await sheetsReq(cfg,'PUT','/values/Tasks!A1:P1?valueInputOption=RAW',{values:[['Task ID','Title','Description','Category','Priority','Client','Deadline','Requested By','Assigned To','Created At','Accepted At','Completed At','Duration','Points','Month','_json']]});
+}
+function taskRow(task){
+  const clientDisplay=[task.client||'',task.project||''].filter(Boolean).join(' · ');
+  return[task.id,task.title,task.desc||'',task.category,task.priority,clientDisplay,task.deadline||'',task.createdBy,task.assignedTo||'',fmtTime(task.createdAt),fmtTime(task.acceptedAt),fmtTime(task.completedAt),task.duration?fmtDur(task.duration):'',task.points||'',currentMonth(),JSON.stringify(task)];
+}
+async function sheetAppend(cfg,task){
+  await ensureHeaders(cfg);
+  await sheetsReq(cfg,'POST','/values/Tasks!A:P:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{values:[taskRow(task)]});
+}
+async function sheetUpdate(cfg,task){
+  try{
+    const d=await sheetsReq(cfg,'GET','/values/Tasks!A:A');
+    if(!d.values)return;
+    const i=d.values.findIndex(r=>r[0]===task.id);
+    if(i<1)return; // row not found — skip, never duplicate via update path
+    const row=i+1;
+    await sheetsReq(cfg,'PUT',`/values/Tasks!A${row}:P${row}?valueInputOption=RAW`,{values:[taskRow(task)]});
+  }catch(e){console.warn('sheet update',e);}
+}
+async function sheetRewrite(cfg,tasks){
+  await ensureHeaders(cfg);
+  await sheetsReq(cfg,'POST','/values/Tasks!A2:P10000:clear',{});
+  const statusOrder=t=>t.completedAt?2:t.acceptedAt?1:0;
+  const sorted=[...tasks].sort((a,b)=>statusOrder(a)-statusOrder(b)||(b.createdAt||0)-(a.createdAt||0));
+  if(!sorted.length)return;
+  await sheetsReq(cfg,'PUT',`/values/Tasks!A2:P${sorted.length+1}?valueInputOption=RAW`,{values:sorted.map(taskRow)});
+}
+async function sheetLoad(cfg){
+  try{
+    const d=await sheetsReq(cfg,'GET','/values/Tasks!A:P');
+    if(!d.values||d.values.length<2)return[];
+    const rows=d.values.slice(1);
+    const tasks=[];
+    for(const row of rows){
+      if(row[15]){try{tasks.push(JSON.parse(row[15]));continue;}catch(e){}}
+      if(row[0]){tasks.push({id:row[0],title:row[1]||'',desc:row[2]||'',category:row[3]||'other',priority:row[4]||'med',client:row[5]||'',deadline:row[6]||'',createdBy:row[7]||'',assignedTo:row[8]||'',createdAt:row[9]?new Date(row[9]).getTime()||Date.now():Date.now(),acceptedAt:row[10]?new Date(row[10]).getTime()||null:null,completedAt:row[11]?new Date(row[11]).getTime()||null:null,duration:null,pausedAt:null,accumulatedMs:0,points:row[13]?parseInt(row[13])||null:null,comments:[]});}
+    }
+    return tasks.filter(t=>t.id);
+  }catch(e){console.warn('sheet load error',e);return[];}
+}
+async function sendEmail(cfg,task){
+  if(!cfg.accessToken||!task.assignedToEmail)return;
+  try{
+    const sub=`[BV Tasks] New task: ${task.title}`;
+    const body=`Hi ${task.assignedTo||'there'},\n\nNew task on the Bagavagabonds board:\n\nTitle: ${task.title}\nClient: ${task.client||'General'}\nCategory: ${task.category}\nPriority: ${task.priority.toUpperCase()}${task.deadline?`\nDeadline: ${task.deadline}`:''}\n${task.desc?`\nDetails: ${task.desc}\n`:''}\nRequested by: ${task.createdBy}\n\nhttps://bagavagabonds.github.io/bv-taskmanager/\n\n— Bagavagabonds Task Board`;
+    const raw=[`To: ${task.assignedToEmail}`,`Subject: ${sub}`,'Content-Type: text/plain; charset=utf-8','',body].join('\n');
+    const enc=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({raw:enc})});
+  }catch(e){console.warn('email',e);}
+}
+
+// ── CHA-CHING ──────────────────────────────────────────────────────────────
+function ChaChing({onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,2400);return()=>clearTimeout(t);},[]);
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  const coins=Array.from({length:18},(_,i)=>{const a=(i/18)*Math.PI*2,d=120+Math.random()*180;return{tx:Math.cos(a)*d,ty:Math.sin(a)*d-100,rot:(Math.random()-.5)*800,delay:Math.random()*0.4};});
+  const bills=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2+0.3,d=95+Math.random()*150;return{tx:Math.cos(a)*d,ty:Math.sin(a)*d-70,rot:(Math.random()-.5)*580,delay:Math.random()*0.28};});
+  return(<div className="chaching-overlay"><div className="chaching-text">CHA-CHING! 💰</div>{coins.map((c,i)=><span key={i} className="coin" style={{left:cx,top:cy,'--tx':`${c.tx}px`,'--ty':`${c.ty}px`,'--rot':`${c.rot}deg`,animationDelay:`${c.delay}s`}}>🪙</span>)}{bills.map((b,i)=><span key={i} className="bill" style={{left:cx,top:cy,'--tx':`${b.tx}px`,'--ty':`${b.ty}px`,'--rot':`${b.rot}deg`,animationDelay:`${b.delay}s`}}>💵</span>)}</div>);
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function Toast({msg,type,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,3200);return()=>clearTimeout(t);},[]);
+  return<div className={`toast ${type}`}>{msg}</div>;
+}
+
+// ── EMAIL AUTOCOMPLETE ─────────────────────────────────────────────────────
+function EmailField({value,onChange,team}){
+  const [open,setOpen]=useState(false);
+  const [sel,setSel]=useState(0);
+  const roster=team||TEAM;
+  const filtered=value.length>0?roster.filter(t=>t.name.toLowerCase().includes(value.toLowerCase())||t.email.toLowerCase().includes(value.toLowerCase())):[];
+  const visible=open&&filtered.length>0;
+  const pick=m=>{onChange(m.email);setOpen(false);};
+  return(
+    <div className="field" style={{position:'relative'}}>
+      <label>Assign to — type name or email</label>
+      <input value={value} onChange={e=>{onChange(e.target.value);setOpen(true);setSel(0);}} onFocus={()=>setOpen(true)} onBlur={()=>setTimeout(()=>setOpen(false),160)}
+        onKeyDown={e=>{if(!visible)return;if(e.key==='ArrowDown'){setSel(s=>Math.min(s+1,filtered.length-1));e.preventDefault();}if(e.key==='ArrowUp'){setSel(s=>Math.max(s-1,0));e.preventDefault();}if(e.key==='Enter'){pick(filtered[sel]);e.preventDefault();}if(e.key==='Escape')setOpen(false);}}
+        placeholder="Leave blank for anyone to claim" autoComplete="off"/>
+      {visible&&(<div className="ac-list">{filtered.map((m,i)=>(<div key={m.email} className={`ac-item${i===sel?' sel':''}`} onMouseDown={()=>pick(m)}><div className="ac-name">{m.name}</div><div className="ac-email">{m.email}</div></div>))}</div>)}
+    </div>
+  );
+}
+
+// ── COMMENT DRAWER ─────────────────────────────────────────────────────────
+function CommentDrawer({task, user, onClose, onAddComment}){
+  const [text,setText]=useState('');
+  const listRef=useRef(null);
+  const comments=task.comments||[];
+
+  useEffect(()=>{
+    if(listRef.current)listRef.current.scrollTop=listRef.current.scrollHeight;
+  },[comments.length]);
+
+  const post=()=>{
+    if(!text.trim())return;
+    onAddComment(task.id,text.trim());
+    setText('');
+  };
+
+  return(
+    <div className="comment-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="comment-drawer">
+        <div className="comment-header">
+          <button className="comment-close" onClick={onClose}>✕</button>
+          <div className="comment-task-title">{task.title}</div>
+          <div className="comment-sub">
+            {CATS.find(c=>c.id===task.category)?.label||task.category}
+            {task.client&&task.client!=='General / Internal'?` · ${task.client}`:''}
+            {' · '}{comments.length} comment{comments.length!==1?'s':''}
+          </div>
+        </div>
+        <div className="comment-list" ref={listRef}>
+          {comments.length===0&&<div className="comment-empty">No comments yet — be the first</div>}
+          {comments.map(c=>(
+            <div key={c.id} className="comment-item">
+              <div className="comment-meta">
+                <div className="comment-av">{initials(c.authorName)}</div>
+                <span className="comment-author">{c.authorName}</span>
+                <span className="comment-time">{fmtShort(c.createdAt)}</span>
+              </div>
+              <div className="comment-text">{c.text}</div>
+            </div>
+          ))}
+        </div>
+        <div className="comment-input-row">
+          <textarea className="comment-input" value={text} onChange={e=>setText(e.target.value)}
+            onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();post();}}}
+            placeholder="Add a comment" rows={1}/>
+          <button className="comment-post-btn" onClick={post} disabled={!text.trim()}>Post</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── NEW TASK MODAL ─────────────────────────────────────────────────────────
+function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,projects,onSaveClients,onSaveCats,onSaveProjects,allTeam,initialTask}){
+  const isEdit=!!initialTask;
+  const [form,setForm]=useState(isEdit?{
+    title:initialTask.title||'',desc:initialTask.desc||'',category:initialTask.category||'other',
+    priority:initialTask.priority||'med',deadline:initialTask.deadline||'',
+    assignedToEmail:initialTask.assignedToEmail||'',client:initialTask.client||'General / Internal',
+    project:initialTask.project||'',noteColor:initialTask.noteColor||'',
+  }:{title:'',desc:'',category:'other',priority:'med',deadline:'',assignedToEmail:'',client:'General / Internal',project:'',noteColor:''});
+  const [editMode,setEditMode]=useState(null); // null | 'clients' | 'cats' | 'projects'
+  const colorInputRef=useRef(null);
+  const hasEyeDropper=typeof EyeDropper!=='undefined';
+  const set=(k,v)=>setForm(f=>({...f,[k]:v}));
+  const member=allTeam.find(t=>t.email===form.assignedToEmail);
+
+  const clientProjects=projects[form.client]||[];
+
+  const save=()=>{
+    if(!form.title.trim())return;
+    const assignedTo=member?.name||(form.assignedToEmail?form.assignedToEmail.split('@')[0]:'');
+    if(isEdit){
+      onSave({...initialTask,...form,title:form.title.trim(),desc:form.desc.trim(),assignedTo});
+    }else{
+      onSave({id:'task_'+Date.now(),...form,title:form.title.trim(),desc:form.desc.trim(),assignedTo,
+        createdBy:currentUser.name,createdByEmail:currentUser.email,createdAt:Date.now(),
+        acceptedAt:null,completedAt:null,duration:null,pausedAt:null,accumulatedMs:0,points:null,comments:[]});
+    }
+  };
+
+  const editBtnStyle={background:'none',border:'none',cursor:'pointer',fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',padding:'0 0 0 6px',textDecoration:'underline',flexShrink:0};
+
+  if(editMode==='clients'){
+    return(
+      <div className="modal-overlay">
+        <div className="modal">
+          <div className="modal-title">Edit <span>Clients</span></div>
+          <ListEditor items={managedClients} addPlaceholder="Client name…" onSave={list=>{onSaveClients(list);setEditMode(null);}}/>
+        </div>
+      </div>
+    );
+  }
+  if(editMode==='cats'){
+    return(
+      <div className="modal-overlay">
+        <div className="modal">
+          <div className="modal-title">Edit <span>Categories</span></div>
+          <ListEditor items={managedCats} addPlaceholder="Category name…" asObjects={true} onSave={list=>{onSaveCats(list);setEditMode(null);if(!list.find(c=>c.id===form.category))set('category','other');}}/>
+        </div>
+      </div>
+    );
+  }
+  if(editMode==='projects'){
+    return(
+      <div className="modal-overlay">
+        <div className="modal">
+          <div className="modal-title">Edit <span>Projects</span> <span style={{fontSize:13,fontWeight:400,color:'var(--text3)'}}>· {form.client}</span></div>
+          <ListEditor items={clientProjects} addPlaceholder="Project name…" onSave={list=>{onSaveProjects(form.client,list);setEditMode(null);if(!list.includes(form.project))set('project','');}}/>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-title">{isEdit?<>Edit <span>task</span></>:<>Post a <span>task</span></>}</div>
+        <div className="field"><label>Title *</label><input value={form.title} onChange={e=>set('title',e.target.value)} placeholder="Build production kit for event" autoFocus/></div>
+        <div className="field"><label>Details / instructions</label><textarea value={form.desc} onChange={e=>set('desc',e.target.value)} placeholder="Notes for the crew..."/></div>
+
+        {/* NOTE COLOR */}
+        <div className="field">
+          <label>Note Color <span style={{fontWeight:400,color:'var(--text3)'}}>(priority controls intensity)</span></label>
+          <div className="color-picker-row">
+            {NOTE_COLOR_OPTIONS.map(opt=>(
+              <button key={opt.id} className={`color-swatch${form.noteColor===opt.id?' selected':''}`}
+                style={{background:opt.hex}} title={opt.label}
+                onClick={()=>set('noteColor',form.noteColor===opt.id?'':opt.id)}/>
+            ))}
+            {/* Color wheel — opens native OS color picker */}
+            <button className={`color-swatch${form.noteColor&&form.noteColor.startsWith('#')?' selected':''}`}
+              style={{background:'conic-gradient(red,#ff8c00,yellow,#00c800,#0080ff,#8000ff,red)',border: form.noteColor&&form.noteColor.startsWith('#')?'2px solid var(--text)':'2px solid transparent'}}
+              title="Custom color" onClick={()=>colorInputRef.current?.click()}/>
+            <input ref={colorInputRef} type="color" style={{display:'none'}}
+              value={form.noteColor&&form.noteColor.startsWith('#')?form.noteColor:'#f5cc90'}
+              onChange={e=>set('noteColor',e.target.value)}/>
+            {/* Eyedropper — pick any color from screen */}
+            {hasEyeDropper&&(
+              <button className="color-swatch" title="Pick color from screen"
+                style={{background:'var(--bg4)',border:'2px dashed var(--border2)',fontSize:'12px',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}
+                onClick={async()=>{try{const r=await new EyeDropper().open();set('noteColor',r.sRGBHex);}catch{}}}>
+                ⊕
+              </button>
+            )}
+            <span style={{fontSize:10,color:'var(--text3)',fontFamily:'DM Mono,monospace',alignSelf:'center',marginLeft:2}}>
+              {form.noteColor
+                ? (form.noteColor.startsWith('#') ? form.noteColor : (NOTE_COLOR_OPTIONS.find(o=>o.id===form.noteColor)?.label||''))
+                : 'auto'}
+            </span>
+          </div>
+        </div>
+
+        {/* CLIENT */}
+        <div className="field">
+          <label style={{display:'flex',alignItems:'center'}}>
+            Client
+            <button style={editBtnStyle} onClick={()=>setEditMode('clients')}>✎ edit list</button>
+          </label>
+          <select value={form.client} onChange={e=>{set('client',e.target.value);set('project','');}}>
+            {managedClients.map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+
+        {/* PROJECT */}
+        {form.client&&(
+          <div className="field">
+            <label style={{display:'flex',alignItems:'center'}}>
+              Project <span style={{fontWeight:400,color:'var(--text3)',marginLeft:4}}>(optional)</span>
+              <button style={editBtnStyle} onClick={()=>setEditMode('projects')}>✎ edit list</button>
+            </label>
+            <select value={form.project} onChange={e=>set('project',e.target.value)}>
+              <option value="">— None —</option>
+              {clientProjects.map(p=><option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+        )}
+
+        <div className="field-row">
+          <div className="field">
+            <label style={{display:'flex',alignItems:'center'}}>
+              Category
+              <button style={editBtnStyle} onClick={()=>setEditMode('cats')}>✎ edit list</button>
+            </label>
+            <select value={form.category} onChange={e=>set('category',e.target.value)}>
+              {managedCats.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
+          <div className="field"><label>Priority</label><select value={form.priority} onChange={e=>set('priority',e.target.value)}><option value="high">High</option><option value="med">Medium</option><option value="low">Low</option></select></div>
+        </div>
+        <div className="field"><label>Deadline (optional)</label><input type="date" value={form.deadline} onChange={e=>set('deadline',e.target.value)}/></div>
+        <EmailField value={form.assignedToEmail} onChange={v=>set('assignedToEmail',v)} team={allTeam}/>
+        <div className="modal-actions">
+          <button className="btn-cancel" onClick={onClose}>Cancel</button>
+          <button className="btn-post" onClick={save} disabled={!form.title.trim()}>{isEdit?'Save changes':'Post task'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TASK CARD ──────────────────────────────────────────────────────────────
+function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,fontSize,allCats}){
+  const {col,hex,rot}=noteStyle(task.id,task.priority,task.noteColor);
+  const prioClass=task.priority==='high'?' prio-high':task.priority==='low'?' prio-low':'';
+  const isDone=!!task.completedAt;
+  const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
+  const isPaused=task.acceptedAt&&!task.completedAt&&!!task.pausedAt;
+  const overdue=!isDone&&isOverdue(task.deadline);
+  const fs=fontSize||14;
+  let elapsed=null;
+  if(isActive)elapsed=fmtDur((task.accumulatedMs||0)+(Date.now()-task.acceptedAt));
+  if(isPaused)elapsed=fmtDur(task.accumulatedMs||0);
+  const commentCount=(task.comments||[]).length;
+  const cats=allCats||CATS;
+  return(
+    <div className={`note ${col} ${rot}${prioClass}${isDone?' is-done':''}`} style={{fontSize:fs+'px',...(hex?{background:hex}:{})}}
+      draggable={!isDone}
+      onDragStart={e=>{e.dataTransfer.setData('taskId',task.id);e.dataTransfer.effectAllowed='move';}}>
+      <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</div>
+      <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
+      <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
+      {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{task.desc}</div>}
+      {task.deadline&&<div className={`ndl${overdue?' overdue':''}`} style={{fontSize:(fs*0.64)+'px'}}>{overdue?'⚠ Overdue: ':'📅 '}{task.deadline}</div>}
+      {isActive&&<div className="ntimer" style={{fontSize:(fs*0.71)+'px'}}><div className="npulse"/>{elapsed}</div>}
+      {isPaused&&<div className="npaused" style={{fontSize:(fs*0.71)+'px'}}>⏸ Paused · {elapsed}</div>}
+      {isDone&&task.duration&&<div className="done-log" style={{fontSize:(fs*0.64)+'px'}}>✓ {fmtDur(task.duration)} · {task.assignedTo||'—'}</div>}
+      {isDone&&task.points&&<div className="pts-badge" style={{fontSize:(fs*0.64)+'px'}}>+{task.points} pts</div>}
+      <div className="nbtns">
+        {!task.acceptedAt&&!isDone&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onAccept(task)}>▶ Accept</button>}
+        {isActive&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onPause(task)}>⏸ Pause</button>}
+        {isPaused&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onResume(task)}>▶ Resume</button>}
+        {(isActive||isPaused)&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onComplete(task)}>✓ Done</button>}
+        <button className="nbtn comment" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onComment(task)}>💬{commentCount>0?` ${commentCount}`:''}</button>
+        {!isDone&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onEdit(task)}>✎</button>}
+        <button className="nbtn danger" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onDelete(task.id)}>✕</button>
+      </div>
+      <div className="by-line" style={{fontSize:(fs*0.64)+'px'}}>{task.assignedTo&&!isDone?`→ ${task.assignedTo} · `:''}{task.createdBy} · {fmtTime(task.createdAt)}</div>
+    </div>
+  );
+}
+
+// ── LIST ROW ───────────────────────────────────────────────────────────────
+function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,allCats}){
+  const [open,setOpen]=useState(false);
+  const isDone=!!task.completedAt;
+  const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
+  const isPaused=task.acceptedAt&&!task.completedAt&&!!task.pausedAt;
+  const overdue=!isDone&&isOverdue(task.deadline);
+  const commentCount=(task.comments||[]).length;
+
+  let elapsed=null;
+  if(isActive)elapsed=fmtDur((task.accumulatedMs||0)+(Date.now()-task.acceptedAt));
+  if(isPaused)elapsed=fmtDur(task.accumulatedMs||0);
+
+  const priColor=task.priority==='high'?'#cc3333':task.priority==='med'?'#c4682a':'#4a8a4a';
+  const dotColor=task.priority==='high'?'#cc3333':task.priority==='med'?'#c4682a':'rgba(255,255,255,0.28)';
+  const statusColor=isDone?'#4a8a4a':isActive?'#c4682a':isPaused?'#9a6200':'rgba(255,255,255,0.2)';
+
+  // display name: show assigned if set, otherwise show "unassigned"
+  const displayName=task.assignedTo||'';
+
+  return(
+    <div className="list-row">
+      <div className="list-row-main" onClick={()=>setOpen(o=>!o)}>
+        <div className="lr-dot" style={{background:dotColor}}/>
+        <div className={`lr-title${isDone?' is-done':''}`}>{task.title}</div>
+        {displayName&&<div className="lr-assignee">{displayName}</div>}
+        {commentCount>0&&<div className="lr-comment-badge">💬{commentCount}</div>}
+        <div className={`lr-expand${open?' open':''}`}>▾</div>
+      </div>
+      {open&&(
+        <div className="list-row-detail">
+          {(isActive||isPaused)&&<div className="lrd-timer">{isActive?<><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block',animation:'pp 1.2s infinite'}}/>Running: {elapsed}</>:<>⏸ Paused: {elapsed}</>}</div>}
+          {task.desc&&<div className="lrd-desc">{task.desc}</div>}
+          <div className="lrd-meta">
+            <span className="lrd-tag">{(allCats||CATS).find(c=>c.id===task.category)?.label||task.category}</span>
+            {task.client&&task.client!=='General / Internal'&&<span className="lrd-tag">{task.client}{task.project?` › ${task.project}`:''}</span>}
+            <span className="lrd-tag" style={{color:priColor}}>{task.priority} priority</span>
+            {task.deadline&&<span className="lrd-tag" style={{color:overdue?'#f08080':'inherit'}}>{overdue?'⚠ ':''}{task.deadline}</span>}
+            {task.createdBy&&<span className="lrd-tag">by {task.createdBy}</span>}
+          </div>
+          {isDone&&<div className="lrd-meta"><span className="lrd-tag" style={{color:'var(--amber)'}}>✓ {fmtDur(task.duration)} · +{task.points||0} pts</span></div>}
+          <div className="lrd-btns">
+            {!task.acceptedAt&&!isDone&&<button className="lrd-btn primary" onClick={()=>onAccept(task)}>▶ Accept</button>}
+            {isActive&&<button className="lrd-btn" onClick={()=>onPause(task)}>⏸ Pause</button>}
+            {isPaused&&<button className="lrd-btn primary" onClick={()=>onResume(task)}>▶ Resume</button>}
+            {(isActive||isPaused)&&<button className="lrd-btn primary" onClick={()=>onComplete(task)}>✓ Done</button>}
+            <button className="lrd-btn" onClick={()=>onComment(task)}>💬 Comments{commentCount>0?` (${commentCount})`:''}</button>
+            {!task.completedAt&&<button className="lrd-btn" onClick={()=>onEdit(task)}>✎ Edit</button>}
+            <button className="lrd-btn danger" onClick={()=>onDelete(task.id)}>✕ Remove</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── LIST EDITOR ────────────────────────────────────────────────────────────
+function ListEditor({items,onSave,addPlaceholder,asObjects}){
+  // items: string[] (clients/projects) or {id,label}[] (cats, when asObjects=true)
+  const toStr=item=>asObjects?item.label:item;
+  const [list,setList]=useState(items);
+  const [editIdx,setEditIdx]=useState(null);
+  const [editVal,setEditVal]=useState('');
+  const [newVal,setNewVal]=useState('');
+  const inStyle={flex:1,background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'4px',color:'var(--text)',fontFamily:'DM Mono,monospace',fontSize:'12px',padding:'5px 8px',outline:'none'};
+  const startEdit=i=>{setEditIdx(i);setEditVal(toStr(list[i]));};
+  const commitEdit=()=>{
+    const v=editVal.trim();if(!v){setEditIdx(null);return;}
+    setList(prev=>prev.map((item,i)=>{
+      if(i!==editIdx)return item;
+      return asObjects?{...item,label:v}:v;
+    }));
+    setEditIdx(null);
+  };
+  const removeItem=i=>setList(prev=>prev.filter((_,j)=>j!==i));
+  const addItem=()=>{
+    const v=newVal.trim();if(!v)return;
+    const already=list.some(item=>toStr(item).toLowerCase()===v.toLowerCase());
+    if(already){setNewVal('');return;}
+    const newItem=asObjects?{id:'cat_'+Date.now(),label:v}:v;
+    setList(prev=>[...prev,newItem]);
+    setNewVal('');
+  };
+  return(
+    <div>
+      <button className="le-back" onClick={()=>onSave(list)}>← Back to form</button>
+      <div className="le-wrap">
+        {list.length===0&&<div className="le-row"><span className="le-label" style={{color:'var(--text3)'}}>No items yet</span></div>}
+        {list.map((item,i)=>(
+          <div className="le-row" key={i}>
+            {editIdx===i?(
+              <input value={editVal} onChange={e=>setEditVal(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')commitEdit();if(e.key==='Escape')setEditIdx(null);}} autoFocus style={inStyle}/>
+            ):(
+              <span className="le-label">{toStr(item)}</span>
+            )}
+            {editIdx===i?(
+              <button className="le-icon" onClick={commitEdit}>✓</button>
+            ):(
+              <button className="le-icon" onClick={()=>startEdit(i)}>✎</button>
+            )}
+            <button className="le-icon del" onClick={()=>removeItem(i)}>✕</button>
+          </div>
+        ))}
+      </div>
+      <div className="le-add">
+        <input value={newVal} onChange={e=>setNewVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addItem()} placeholder={addPlaceholder||'Add new…'} style={inStyle}/>
+        <button onClick={addItem} className="btn-post" style={{padding:'6px 12px',fontSize:'11px'}}>Add</button>
+      </div>
+    </div>
+  );
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────
+function Sidebar({tasks}){
+  const now=new Date(),yr=now.getFullYear(),mo=now.getMonth();
+  const moName=now.toLocaleString('en-US',{month:'long',year:'numeric'});
+  const firstDay=new Date(yr,mo,1).getDay(),dim=new Date(yr,mo+1,0).getDate(),today=now.getDate();
+  const taskDays=new Set(tasks.filter(t=>t.deadline&&!t.completedAt).map(t=>new Date(t.deadline+'T12:00:00').getDate()));
+  const days=[];for(let i=0;i<firstDay;i++)days.push({e:true});for(let d=1;d<=dim;d++)days.push({d});
+  const upcoming=tasks.filter(t=>t.deadline&&!t.completedAt).sort((a,b)=>new Date(a.deadline)-new Date(b.deadline)).slice(0,4);
+  const doneToday=tasks.filter(t=>t.completedAt&&new Date(t.completedAt).toDateString()===now.toDateString());
+  const active=tasks.filter(t=>t.acceptedAt&&!t.completedAt);
+  const avg=doneToday.length?doneToday.reduce((a,t)=>a+(t.duration||0),0)/doneToday.length:0;
+  const dotCols=['#f5cc90','#c4682a','#7a1c1c','#c2e098'];
+  return(
+    <div className="sidebar">
+      <div className="cal-mo">{moName}</div>
+      <div className="cgrid">
+        {['S','M','T','W','T','F','S'].map((d,i)=><div key={i} className="cdn">{d}</div>)}
+        {days.map((d,i)=><div key={i} className={`cdd${d.e?' empty':d.d===today?' today':taskDays.has(d.d)?' has-task':''}`}>{d.d||''}</div>)}
+      </div>
+      <div className="slabel">Due soon</div>
+      {upcoming.length===0&&<div style={{fontSize:'9px',color:'var(--text3)',fontFamily:'DM Mono,monospace',fontStyle:'italic'}}>none set</div>}
+      {upcoming.map((t,i)=>(<div key={t.id} className="devent"><div className="devtxt"><span className="devdot" style={{background:dotCols[i%4]}}></span>{t.title.slice(0,20)}{t.title.length>20?'…':''}</div><div className="devdate">{t.deadline}</div></div>))}
+      <div className="sstat">{doneToday.length}</div><div className="ssub">done today</div>
+      <div className="sstat" style={{color:'var(--amber)',fontSize:'17px'}}>{avg>0?fmtDur(avg):'—'}</div><div className="ssub">avg time</div>
+      <div className="sstat" style={{fontSize:'17px'}}>{active.length}</div><div className="ssub">active now</div>
+    </div>
+  );
+}
+
+// ── LOG VIEW ───────────────────────────────────────────────────────────────
+function LogView({tasks,config}){
+  const done=tasks.filter(t=>t.completedAt);
+  const avg=done.length?done.reduce((a,t)=>a+(t.duration||0),0)/done.length:0;
+  const today=done.filter(t=>new Date(t.completedAt).toDateString()===new Date().toDateString());
+  return(
+    <div className="log-view">
+      <div className="log-header">
+        <div><h2>Task History</h2><p>Full log — who, when, how long, how many points</p></div>
+        {config?.sheetId&&<a className="sheets-btn" target="_blank" rel="noopener" href={`https://docs.google.com/spreadsheets/d/${config.sheetId}`}>↗ Open in Sheets</a>}
+      </div>
+      <div className="log-stats">
+        <div className="stat-card"><div className="stat-label">Total done</div><div className="stat-val">{done.length}</div></div>
+        <div className="stat-card"><div className="stat-label">Done today</div><div className="stat-val">{today.length}</div></div>
+        <div className="stat-card"><div className="stat-label">Avg time</div><div className="stat-val" style={{fontSize:'18px',paddingTop:'3px'}}>{fmtDur(avg)}</div></div>
+        <div className="stat-card"><div className="stat-label">Active now</div><div className="stat-val">{tasks.filter(t=>t.acceptedAt&&!t.completedAt).length}</div></div>
+      </div>
+      <div className="log-wrap">
+        {done.length===0?<div className="no-tasks-msg">no completed tasks yet</div>:(
+          <table className="log-table">
+            <thead><tr><th>Task</th><th>Client</th><th>Priority</th><th>Requested by</th><th>Completed by</th><th>Completed at</th><th>Duration</th><th>Pts</th></tr></thead>
+            <tbody>
+              {[...done].sort((a,b)=>b.completedAt-a.completedAt).map(t=>(
+                <tr key={t.id}>
+                  <td className="tname">{t.title}</td>
+                  <td className="tmono">{t.client||'—'}</td>
+                  <td><span className={`nprio-badge ${t.priority==='high'?'nph':t.priority==='med'?'npm':'npl'}`} style={{position:'static',display:'inline-block',fontSize:'9px'}}>{t.priority}</span></td>
+                  <td className="tmono">{t.createdBy||'—'}</td>
+                  <td className="tmono">{t.assignedTo||'—'}</td>
+                  <td className="tmono">{fmtTime(t.completedAt)}</td>
+                  <td className="tmono" style={{color:'var(--amber)'}}>{fmtDur(t.duration)}</td>
+                  <td className="tmono" style={{color:'var(--amber)',fontWeight:'700'}}>{t.points||'—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── SCORES VIEW ────────────────────────────────────────────────────────────
+function ScoresView({tasks,manualBadges,demerits}){
+  const mo=currentMonth();
+  const moLabel=new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+  const members=TEAM.map(member=>{
+    const done=tasks.filter(t=>t.completedAt&&t.assignedTo===member.name);
+    const moDone=done.filter(t=>{const d=new Date(t.completedAt);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`===mo;});
+    const demeritTotal=demerits.filter(d=>d.member===member.name).reduce((a,d)=>a+d.pts,0);
+    const demeritMo=demerits.filter(d=>{const dm=new Date(d.issuedAt);return d.member===member.name&&`${dm.getFullYear()}-${String(dm.getMonth()+1).padStart(2,'0')}`===mo;}).reduce((a,d)=>a+d.pts,0);
+    const totalPts=Math.max(0,done.reduce((a,t)=>a+(t.points||0),0)-demeritTotal);
+    const moPts=Math.max(0,moDone.reduce((a,t)=>a+(t.points||0),0)-demeritMo);
+    const autoBadges=calcAutoBadges(member.name,tasks);
+    const badges=[...new Set([...autoBadges,...(manualBadges[member.name]||[])])];
+    return{...member,done:done.length,moDone:moDone.length,totalPts,moPts,badges};
+  }).filter(m=>m.done>0).sort((a,b)=>b.moPts-a.moPts);
+  const withTopBadge=members.map((m,i)=>({...m,badges:i===0&&m.moPts>0?[...new Set([...m.badges,'top_month'])]:m.badges}));
+  const rankEmoji=['🥇','🥈','🥉'];
+  return(
+    <div className="scores-view">
+      <div className="scores-header"><h2>Leaderboard 🏆</h2><div className="month-label">{moLabel}</div></div>
+      {withTopBadge.length===0&&<div style={{textAlign:'center',padding:'60px 24px',fontSize:'13px',color:'var(--text3)',fontFamily:'DM Mono,monospace'}}>no completed tasks yet — get to work! 💪</div>}
+      <div className="leaderboard">
+        {withTopBadge.map((m,i)=>(
+          <div key={m.email} className={`player-card${i<3?` rank-${i+1}`:''}`}>
+            <div className="player-rank">{rankEmoji[i]||''}</div>
+            <div className="player-av">{initials(m.name)}</div>
+            <div className="player-name">{m.name}</div>
+            <div className="player-pts">{m.moPts}</div>
+            <div className="player-pts-label">pts this month</div>
+            <div className="player-stats"><div className="pstat">This month: <span>{m.moDone}</span></div><div className="pstat">Total pts: <span>{m.totalPts}</span></div></div>
+            {m.badges.length>0&&(<div className="badges-row">{m.badges.map(bid=>{const b=BADGES_DEF.find(x=>x.id===bid);return b?<div key={bid} className="badge">{b.emoji}<div className="badge-tip">{b.label}</div></div>:null;})}</div>)}
+          </div>
+        ))}
+      </div>
+      <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'10px',padding:'18px 22px'}}>
+        <div style={{fontSize:'10px',fontFamily:'DM Mono,monospace',fontWeight:'800',letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--text3)',marginBottom:'12px'}}>Point values</div>
+        <div style={{display:'flex',gap:'20px',flexWrap:'wrap'}}>
+          {[['High','3 pts','nph'],['Medium','2 pts','npm'],['Low','1 pt','npl'],['Speed bonus (under 10 min)','+1 pt','']].map(([label,val,cls])=>(
+            <div key={label} style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace'}}><span className={cls?`nprio-badge ${cls}`:''} style={{position:'static',display:'inline-block',fontSize:'9px',marginRight:'6px'}}>{val}</span>{label}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SETTINGS VIEW ──────────────────────────────────────────────────────────
+function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet}){
+  const [draft,setDraft]=useState(settings);
+  const [saved,setSaved]=useState(false);
+  const [devOpen,setDevOpen]=useState(false);
+  const [devPin,setDevPin]=useState('');
+  const [devError,setDevError]=useState(false);
+  const [adminUnlocked,setAdminUnlocked]=useState(false);
+  const [badgeMember,setBadgeMember]=useState(allTeam[0].name);
+  const [demeritMember,setDemeritMember]=useState(allTeam[0].name);
+  const [demeritPts,setDemeritPts]=useState(1);
+  const [demeritReason,setDemeritReason]=useState('');
+  const [confirmClear,setConfirmClear]=useState(false);
+  const [newPin,setNewPin]=useState('');
+  const [curPin,setCurPin]=useState('');
+  const [pinMsg,setPinMsg]=useState('');
+  const [newUserName,setNewUserName]=useState('');
+  const [newUserEmail,setNewUserEmail]=useState('');
+  const [userMsg,setUserMsg]=useState('');
+
+  const handleFontSize=e=>{const fs=parseInt(e.target.value);setDraft(d=>({...d,fontSize:fs}));onSettings({...settings,...draft,fontSize:fs});};
+  const handleTheme=id=>{setDraft(d=>({...d,theme:id}));onSettings({...settings,...draft,theme:id});};
+  const handleSave=()=>{onSave(draft);setSaved(true);setTimeout(()=>setSaved(false),2000);};
+  const tryUnlock=()=>{const stored=localStorage.getItem(ADMIN_PIN_KEY)||DEFAULT_PIN;if(devPin===stored){setAdminUnlocked(true);setDevPin('');setDevError(false);}else{setDevError(true);setDevPin('');setTimeout(()=>setDevError(false),1200);}};
+  const memberBadges=manualBadges[badgeMember]||[];
+  const toggleBadge=bid=>{const cur=manualBadges[badgeMember]||[];const upd=cur.includes(bid)?cur.filter(b=>b!==bid):[...cur,bid];onManualBadges({...manualBadges,[badgeMember]:upd});};
+  const issueDemerit=()=>{if(!demeritReason.trim())return;const entry={id:'dm_'+Date.now(),member:demeritMember,pts:demeritPts,reason:demeritReason.trim(),issuedAt:Date.now()};onDemerits([...demerits,entry]);setDemeritReason('');showToast(`Demerit issued to ${demeritMember} (-${demeritPts} pts)`,'');};
+  const changePin=()=>{const stored=localStorage.getItem(ADMIN_PIN_KEY)||DEFAULT_PIN;if(curPin!==stored){setPinMsg('Current password incorrect');return;}if(newPin.length<4){setPinMsg('New password must be at least 4 characters');return;}localStorage.setItem(ADMIN_PIN_KEY,newPin);setCurPin('');setNewPin('');setPinMsg('✓ Password updated!');setTimeout(()=>setPinMsg(''),2500);};
+
+  return(
+    <div className="settings-view">
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'22px'}}>
+        <h2>Settings ⚙️</h2>
+        <button className="btn-post" style={{padding:'8px 20px',fontSize:'12px'}} onClick={handleSave}>{saved?'✓ Saved!':'Save changes'}</button>
+      </div>
+      <div className="settings-section">
+        <h3>Color Theme</h3>
+        <div className="theme-grid">
+          {THEMES.map(t=>(<div key={t.id} className={`theme-btn${draft.theme===t.id?' active':''}`} style={{background:t.bg}} onClick={()=>handleTheme(t.id)}><div className="theme-preview" style={{background:`linear-gradient(135deg,${t.bg},${t.accent})`}}/><div className="theme-btn-label" style={{color:t.accent}}>{t.label}</div></div>))}
+        </div>
+      </div>
+      <div className="settings-section">
+        <h3>Card Font Size</h3>
+        <div className="font-row">
+          <label>Small</label>
+          <input type="range" className="font-slider" min="11" max="20" value={draft.fontSize||14} onChange={handleFontSize}/>
+          <label>Large</label>
+          <span className="font-preview">{draft.fontSize||14}px</span>
+        </div>
+        <div style={{marginTop:'12px',background:'var(--bg3)',borderRadius:'6px',padding:'10px 14px',fontSize:(draft.fontSize||14)+'px',color:'var(--text2)',fontFamily:'Syne,sans-serif'}}>Preview: Move pallet 3 to bay 4</div>
+      </div>
+      <div className="dev-section" style={{borderColor:adminUnlocked?'rgba(196,104,42,0.4)':'var(--border)'}}>
+        <div className="dev-header" onClick={()=>!adminUnlocked&&setDevOpen(o=>!o)}>
+          <div className="dev-title" style={{color:adminUnlocked?'var(--amber)':'var(--text3)'}}>{adminUnlocked?'🔓 Admin Unlocked':'🔒 Developer Options'}</div>
+          {!adminUnlocked&&<span style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace'}}>{devOpen?'▲':'▼'}</span>}
+        </div>
+        {!adminUnlocked&&devOpen&&(
+          <div style={{marginTop:'16px'}}>
+            <p style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace',marginBottom:'12px'}}>Enter admin password to unlock privileged controls.</p>
+            <div style={{display:'flex',gap:'10px',alignItems:'flex-start'}}>
+              <div className="field" style={{margin:0,flex:1}}><input type="password" value={devPin} onChange={e=>setDevPin(e.target.value)} onKeyDown={e=>e.key==='Enter'&&tryUnlock()} placeholder="Admin password" style={{borderColor:devError?'#f08080':'var(--border2)'}}/>{devError&&<div style={{color:'#f08080',fontSize:'11px',fontFamily:'DM Mono,monospace',marginTop:'5px'}}>Incorrect password</div>}</div>
+              <button className="btn-post" style={{padding:'9px 16px',fontSize:'12px'}} onClick={tryUnlock}>Unlock</button>
+            </div>
+          </div>
+        )}
+        {adminUnlocked&&(
+          <div style={{marginTop:'20px',display:'flex',flexDirection:'column',gap:'24px'}}>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Award / Revoke Badges</div>
+              <div style={{marginBottom:'12px'}}><select value={badgeMember} onChange={e=>setBadgeMember(e.target.value)} style={{background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'6px',color:'var(--text)',fontFamily:'Syne,sans-serif',fontSize:'13px',padding:'9px 14px',outline:'none'}}>{allTeam.map(m=><option key={m.email} value={m.name}>{m.name}</option>)}</select></div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:'7px'}}>
+                {BADGES_DEF.map(b=>{const active=memberBadges.includes(b.id);return(<div key={b.id} className={`badge-toggle${active?' on':''}`} onClick={()=>toggleBadge(b.id)}><span style={{fontSize:'18px'}}>{b.emoji}</span><div><div className="badge-toggle-label" style={{color:active?'var(--amber)':'var(--text)'}}>{b.label}</div><div className="badge-toggle-sub">{active?'awarded ✓':'click to award'}</div></div></div>);})}
+              </div>
+            </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Issue Demerit</div>
+              <div style={{display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'flex-end',marginBottom:'14px'}}>
+                <div className="field" style={{margin:0}}><label>Member</label><select value={demeritMember} onChange={e=>setDemeritMember(e.target.value)} style={{background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'6px',color:'var(--text)',fontFamily:'Syne,sans-serif',fontSize:'13px',padding:'9px 14px',outline:'none'}}>{allTeam.map(m=><option key={m.email} value={m.name}>{m.name}</option>)}</select></div>
+                <div className="field" style={{margin:0,width:'90px'}}><label>Points</label><select value={demeritPts} onChange={e=>setDemeritPts(parseInt(e.target.value))} style={{background:'var(--bg3)',border:'1px solid var(--border2)',borderRadius:'6px',color:'var(--text)',fontFamily:'Syne,sans-serif',fontSize:'13px',padding:'9px 14px',outline:'none'}}>{[1,2,3,5,10].map(n=><option key={n} value={n}>-{n}</option>)}</select></div>
+                <div className="field" style={{margin:0,flex:1,minWidth:'160px'}}><label>Reason</label><input value={demeritReason} onChange={e=>setDemeritReason(e.target.value)} onKeyDown={e=>e.key==='Enter'&&issueDemerit()} placeholder="e.g. Late on deadline..."/></div>
+                <button className="clear-btn" style={{padding:'9px 14px',fontSize:'12px'}} onClick={issueDemerit}>Issue</button>
+              </div>
+              {demerits.length>0?(<div style={{background:'var(--bg3)',borderRadius:'7px',overflow:'hidden',border:'1px solid var(--border)'}}>
+                {[...demerits].sort((a,b)=>b.issuedAt-a.issuedAt).map(d=>(<div key={d.id} className="demerit-row"><span className="demerit-pts">-{d.pts}</span><span className="demerit-who">{d.member}</span><span className="demerit-reason">{d.reason}</span><span className="demerit-time">{fmtTime(d.issuedAt)}</span><button className="demerit-del" onClick={()=>{if(window.confirm(`Remove ${d.pts}pt demerit from ${d.member}?`))onDemerits(demerits.filter(x=>x.id!==d.id));}}>✕</button></div>))}
+              </div>):(<div style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace',fontStyle:'italic'}}>No demerits issued</div>)}
+            </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Data</div>
+              <p style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace',marginBottom:'12px'}}>Clear all local task data. Does not affect your Google Sheet.</p>
+              {!confirmClear?<button className="clear-btn" onClick={()=>setConfirmClear(true)}>Clear all tasks</button>:<div style={{display:'flex',gap:'10px',alignItems:'center'}}><span style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace'}}>Are you sure?</span><button className="clear-btn" onClick={()=>{onClearTasks();setConfirmClear(false);}}>Yes, clear</button><button className="btn-cancel" onClick={()=>setConfirmClear(false)}>Cancel</button></div>}
+              <div style={{marginTop:'16px',paddingTop:'16px',borderTop:'1px solid var(--border)'}}>
+                <p style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace',marginBottom:'10px'}}>Rewrite Google Sheet — clears all rows and rewrites every task cleanly sorted (Open → Active → Done). Fixes blank rows and scattered entries.</p>
+                <button className="btn-post" style={{fontSize:'12px',padding:'8px 16px'}} onClick={onRewriteSheet}>↺ Rewrite Sheet</button>
+              </div>
+            </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Change Admin Password</div>
+              <div style={{display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'flex-end'}}>
+                <div className="field" style={{margin:0,flex:1,minWidth:'120px'}}><label>Current</label><input type="password" value={curPin} onChange={e=>setCurPin(e.target.value)} placeholder="Current password"/></div>
+                <div className="field" style={{margin:0,flex:1,minWidth:'120px'}}><label>New</label><input type="password" value={newPin} onChange={e=>setNewPin(e.target.value)} placeholder="Min 4 chars"/></div>
+                <button className="btn-post" style={{padding:'9px 16px',fontSize:'12px'}} onClick={changePin}>Update</button>
+              </div>
+              {pinMsg&&<div style={{fontSize:'11px',fontFamily:'DM Mono,monospace',color:pinMsg.startsWith('✓')?'#8fce8f':'#f08080',marginTop:'8px'}}>{pinMsg}</div>}
+            </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Team Members</div>
+              <div style={{marginBottom:'12px',background:'var(--bg3)',borderRadius:'7px',overflow:'hidden',border:'1px solid var(--border)'}}>
+                {allTeam.map(m=>(
+                  <div key={m.email} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 14px',borderBottom:'1px solid var(--border)'}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:'var(--crimson-dim)',border:'1px solid var(--amber-dim)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px',fontWeight:'800',color:'var(--amber)',fontFamily:'DM Mono,monospace',flexShrink:0}}>{(m.name||'?').split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase()}</div>
+                    <div style={{flex:1}}><div style={{fontSize:'12px',fontWeight:'700',color:'var(--text)'}}>{m.name}</div><div style={{fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace'}}>{m.email}</div></div>
+                    {customTeam.find(ct=>ct.email===m.email)&&<span style={{fontSize:'9px',fontFamily:'DM Mono,monospace',color:'var(--text3)'}}>custom</span>}
+                  </div>
+                ))}
+              </div>
+              <div style={{display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'flex-end'}}>
+                <div className="field" style={{margin:0,flex:1,minWidth:'120px'}}><label>Name</label><input value={newUserName} onChange={e=>setNewUserName(e.target.value)} placeholder="First Last"/></div>
+                <div className="field" style={{margin:0,flex:2,minWidth:'180px'}}><label>Email</label><input type="email" value={newUserEmail} onChange={e=>setNewUserEmail(e.target.value)} placeholder="name@bagavagabonds.com"/></div>
+                <button className="btn-post" style={{padding:'9px 16px',fontSize:'12px'}} onClick={()=>{
+                  const n=newUserName.trim(),e=newUserEmail.trim();
+                  if(!n||!e){setUserMsg('Name and email required');return;}
+                  if(allTeam.find(t=>t.email===e)){setUserMsg('Email already exists');return;}
+                  onAddUser(n,e);setNewUserName('');setNewUserEmail('');setUserMsg(`✓ ${n} added`);setTimeout(()=>setUserMsg(''),2500);
+                }}>Add</button>
+              </div>
+              {userMsg&&<div style={{fontSize:'11px',fontFamily:'DM Mono,monospace',color:userMsg.startsWith('✓')?'#8fce8f':'#f08080',marginTop:'8px'}}>{userMsg}</div>}
+            </div>
+            <button className="btn-cancel" style={{fontSize:'12px',alignSelf:'flex-start'}} onClick={()=>setAdminUnlocked(false)}>🔒 Lock admin panel</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── AUTH SCREEN ────────────────────────────────────────────────────────────
+function AuthScreen({onSignIn,restoring}){
+  return(
+    <div className="auth-screen">
+      <div className="auth-dots"/>
+      <div className="auth-card">
+        <div className="auth-badge">BV</div>
+        <div className="auth-title">Bagavagabonds<br/>Task Board</div>
+        <div className="auth-sub">Assign tasks from anywhere.<br/>Warehouse crew gets notified instantly.</div>
+        {restoring
+          ?<button className="auth-btn" disabled style={{opacity:0.6}}><div className="spinner" style={{width:'14px',height:'14px',borderWidth:'2px'}}/> Restoring session...</button>
+          :<button className="auth-btn" onClick={onSignIn}>Sign in with Google</button>
+        }
+        <div className="auth-note">use your @bagavagabonds.com account</div>
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN APP ───────────────────────────────────────────────────────────────
+function App(){
+  const getSaved = key => { try{return JSON.parse(localStorage.getItem(key));}catch{return null;} };
+
+  // Auth: store token + expiry for session persistence
+  const [config,setConfig]=useState(()=>{
+    const saved=getSaved(CONFIG_KEY);
+    const tokenValid=saved?.accessToken&&saved?.tokenExpiry&&saved.tokenExpiry>Date.now()+30000;
+    return{...HARDCODED_CONFIG,accessToken:tokenValid?saved.accessToken:null,tokenExpiry:tokenValid?saved.tokenExpiry:null};
+  });
+  const [user,setUser]=useState(null);
+  const [restoring,setRestoring]=useState(()=>{
+    const saved=getSaved(CONFIG_KEY);
+    return!!(saved?.accessToken&&saved?.tokenExpiry&&saved.tokenExpiry>Date.now()+30000);
+  });
+  const [tasks,setTasks]=useState(()=>getSaved(TASKS_KEY)||[]);
+  const [settings,setSettings]=useState(()=>getSaved(SETTINGS_KEY)||{theme:'theme-e',fontSize:14,viewMode:isMobileWidth()?'list':'cards'});
+  const [manualBadges,setManualBadges]=useState(()=>getSaved(BADGES_KEY)||{});
+  const [demerits,setDemerits]=useState(()=>getSaved(DEMERITS_KEY)||[]);
+  const [view,setView]=useState('board');
+  const [viewMode,setViewMode]=useState(()=>(getSaved(SETTINGS_KEY)||{}).viewMode||(isMobileWidth()?'list':'cards'));
+  const [filterMine,setFilterMine]=useState(false);
+  const [showNew,setShowNew]=useState(false);
+  const [toast,setToast]=useState(null);
+  const [syncing,setSyncing]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const [showMenu,setShowMenu]=useState(false);
+  const [chaChing,setChaChing]=useState(false);
+  const [dragOver,setDragOver]=useState(null);
+
+  const [commentTask,setCommentTask]=useState(null);
+  const [editTask,setEditTask]=useState(null);
+  const [sortBy,setSortBy]=useState('date');
+  const [statusFilter,setStatusFilter]=useState('all');
+  const [managedCats,setManagedCats]=useState(()=>getSaved(MANAGED_CATS_KEY)||[...CATS]);
+  const [projects,setProjects]=useState(()=>getSaved(PROJECTS_KEY)||{});
+  const [managedClients,setManagedClients]=useState(()=>getSaved(MANAGED_CLIENTS_KEY)||[...CLIENTS]);
+  const [customTeam,setCustomTeam]=useState(()=>getSaved(CUSTOM_TEAM_KEY)||[]);
+  const [deletedIds,setDeletedIds]=useState(()=>new Set(getSaved(DELETED_IDS_KEY)||[]));
+  const [refreshing,setRefreshing]=useState(false);
+  const tokenRef=useRef(null);
+  const pollRef=useRef(null);
+  const configRef=useRef(config);
+  const deletedIdsRef=useRef(deletedIds);
+  useEffect(()=>{configRef.current=config;},[config]);
+  useEffect(()=>{deletedIdsRef.current=deletedIds;},[deletedIds]);
+
+  const allTeam=[...TEAM,...customTeam];
+
+  useEffect(()=>{localStorage.setItem(TASKS_KEY,JSON.stringify(tasks));},[tasks]);
+  useEffect(()=>{localStorage.setItem(SETTINGS_KEY,JSON.stringify({...settings,viewMode}));},[settings,viewMode]);
+  useEffect(()=>{localStorage.setItem(BADGES_KEY,JSON.stringify(manualBadges));},[manualBadges]);
+  useEffect(()=>{localStorage.setItem(DEMERITS_KEY,JSON.stringify(demerits));},[demerits]);
+  useEffect(()=>{localStorage.setItem(MANAGED_CATS_KEY,JSON.stringify(managedCats));},[managedCats]);
+  useEffect(()=>{localStorage.setItem(DELETED_IDS_KEY,JSON.stringify([...deletedIds]));},[deletedIds]);
+  useEffect(()=>{localStorage.setItem(PROJECTS_KEY,JSON.stringify(projects));},[projects]);
+  useEffect(()=>{localStorage.setItem(MANAGED_CLIENTS_KEY,JSON.stringify(managedClients));},[managedClients]);
+  useEffect(()=>{localStorage.setItem(CUSTOM_TEAM_KEY,JSON.stringify(customTeam));},[customTeam]);
+  useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-e');},[settings.theme]);
+
+  // ── Try to restore session from stored token ──
+  useEffect(()=>{
+    if(!config?.accessToken||user)return;
+    (async()=>{
+      try{
+        const pr=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${config.accessToken}`}});
+        if(!pr.ok)throw new Error('token invalid');
+        const p=await pr.json();
+        const member=TEAM.find(t=>t.email===p.email);
+        setUser({name:member?.name||p.name,email:p.email});
+        setRestoring(false);
+      }catch{
+        // Token invalid, clear it
+        setConfig(c=>({...c,accessToken:null,tokenExpiry:null}));
+        setRestoring(false);
+      }
+    })();
+  },[]);
+
+  // ── Load Google Sign-In ──
+  useEffect(()=>{
+    if(!config)return;
+    const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.defer=true;
+    s.onload=()=>{
+      if(!window.google||!config)return;
+      tokenRef.current=window.google.accounts.oauth2.initTokenClient({
+        client_id:config.clientId,
+        scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send email profile',
+        callback:async resp=>{
+          if(resp.access_token){
+            const expiry=Date.now()+((resp.expires_in||3600)*1000);
+            const c={...HARDCODED_CONFIG,accessToken:resp.access_token,tokenExpiry:expiry};
+            setConfig(c);localStorage.setItem(CONFIG_KEY,JSON.stringify(c));
+            const pr=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${resp.access_token}`}});
+            const p=await pr.json();
+            const member=TEAM.find(t=>t.email===p.email);
+            const uname=member?.name||p.name;
+            setUser({name:uname,email:p.email});
+            showToast('Loading tasks...','success');
+            setLoading(true);
+            try{
+              const sheetTasks=await sheetLoad(c);
+              if(sheetTasks.length>0){setTasks(sheetTasks);localStorage.setItem(TASKS_KEY,JSON.stringify(sheetTasks));showToast(`Signed in as ${uname} · ${sheetTasks.length} tasks loaded`,'success');}
+              else{showToast(`Signed in as ${uname}`,'success');}
+            }catch{showToast('Signed in — using local data','success');}
+            setLoading(false);
+          }
+        }
+      });
+    };
+    document.head.appendChild(s);
+    return()=>{try{document.head.removeChild(s);}catch{}};
+  },[config?.clientId]);
+
+  const handleSignIn=()=>tokenRef.current?tokenRef.current.requestAccessToken():showToast('Google API loading — try again','error');
+  const showToast=(msg,type='')=>setToast({msg,type});
+
+  const syncTask=async(task,isNew=false)=>{
+    if(!configRef.current?.accessToken||!configRef.current?.sheetId)return;
+    setSyncing(true);
+    let ok=false;
+    for(let i=0;i<3&&!ok;i++){
+      try{
+        if(i>0)await new Promise(r=>setTimeout(r,i*1500));
+        isNew?await sheetAppend(configRef.current,task):await sheetUpdate(configRef.current,task);
+        ok=true;
+      }catch(e){
+        if(i===2)showToast('Sync failed — task saved locally ⚠️','error');
+      }
+    }
+    setSyncing(false);
+  };
+
+  const handleNewTask=async task=>{
+    setShowNew(false);setTasks(prev=>[task,...prev]);
+    playSound('post');showToast('Task posted! 🎯','success');
+    await syncTask(task,true);
+    if(task.assignedToEmail&&config?.accessToken){try{await sendEmail(config,task);}catch(e){showToast('Email failed — task still posted','');}}
+  };
+
+  const handleAccept=async task=>{
+    const now=Date.now();
+    const updated=tasks.map(t=>t.id===task.id?{...t,acceptedAt:now,accumulatedMs:0,pausedAt:null,assignedTo:t.assignedTo||user?.name||'Unknown'}:t);
+    setTasks(updated);playSound('accept');showToast('Task accepted — timer started ⏱','success');
+    await syncTask(updated.find(t=>t.id===task.id));
+  };
+
+  const handlePause=async task=>{
+    const now=Date.now();const elapsed=(task.accumulatedMs||0)+(now-task.acceptedAt);
+    const updated=tasks.map(t=>t.id===task.id?{...t,pausedAt:now,accumulatedMs:elapsed}:t);
+    setTasks(updated);showToast('Task paused ⏸','');
+  };
+
+  const handleResume=async task=>{
+    const now=Date.now();
+    const updated=tasks.map(t=>t.id===task.id?{...t,pausedAt:null,acceptedAt:now}:t);
+    setTasks(updated);playSound('accept');showToast('Resumed ▶','success');
+  };
+
+  const handleComplete=async task=>{
+    const now=Date.now();
+    const runMs=task.pausedAt?0:(now-task.acceptedAt);
+    const total=(task.accumulatedMs||0)+runMs;
+    const pts=taskPts({...task,duration:total});
+    const updated=tasks.map(t=>t.id===task.id?{...t,completedAt:now,duration:total,pausedAt:null,points:pts}:t);
+    setTasks(updated);setChaChing(true);playSound('complete');
+    showToast(`Done! +${pts} pts · ${fmtDur(total)} 💰`,'success');
+    await syncTask(updated.find(t=>t.id===task.id));
+  };
+
+  const handleDelete=id=>{
+    setDeletedIds(prev=>{const n=new Set(prev);n.add(id);return n;});
+    setTasks(prev=>prev.filter(t=>t.id!==id));
+    playSound('delete');
+  };
+  const handleClearTasks=()=>{setTasks([]);showToast('All tasks cleared','');};
+  const handleClearCompleted=()=>{
+    const completed=tasks.filter(t=>t.completedAt);
+    if(!completed.length)return;
+    setDeletedIds(prev=>new Set([...prev,...completed.map(t=>t.id)]));
+    setTasks(prev=>prev.filter(t=>!t.completedAt));
+    showToast('Cleared completed tasks','success');
+    playSound('delete');
+  };
+  const handleSheetRewrite=async()=>{
+    if(!config?.accessToken){showToast('Not connected to Sheets','error');return;}
+    showToast('Rewriting sheet…','');
+    try{await sheetRewrite(config,tasks);showToast('Sheet rewritten cleanly ✓','success');}
+    catch{showToast('Rewrite failed','error');}
+  };
+  const handleEditSave=async updated=>{
+    setTasks(prev=>prev.map(t=>t.id===updated.id?updated:t));
+    setEditTask(null);
+    await syncTask(updated);
+  };
+  const handleSaveClients=list=>setManagedClients(list);
+  const handleSaveCats=list=>setManagedCats(list);
+  const handleSaveProjects=(client,list)=>setProjects(prev=>({...prev,[client]:list}));
+  const handleAddUser=(name,email)=>{if(!allTeam.find(t=>t.email===email))setCustomTeam(prev=>[...prev,{name,email}]);};
+
+  const doRefresh=async(cfg,silent=false)=>{
+    if(!cfg?.accessToken||!cfg?.sheetId)return;
+    if(!silent)setRefreshing(true);
+    try{
+      const sheetTasks=await sheetLoad(cfg);
+      if(sheetTasks.length>0){
+        setTasks(local=>{
+          const deleted=deletedIdsRef.current;
+          const visible=sheetTasks.filter(t=>!deleted.has(t.id));
+          const sheetMap=new Map(visible.map(t=>[t.id,t]));
+          const localOnly=local.filter(t=>!sheetMap.has(t.id)&&!deleted.has(t.id));
+          const merged=visible.map(st=>{
+            const lt=local.find(t=>t.id===st.id);
+            if(!lt)return st;
+            const activeTimer=lt.acceptedAt&&!lt.completedAt&&!lt.pausedAt;
+            return activeTimer?lt:st;
+          });
+          return[...merged,...localOnly];
+        });
+        if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks`,'success');
+      }else{
+        if(!silent)showToast('Sheet appears empty — keeping local data','');
+      }
+    }catch{if(!silent)showToast('Refresh failed','error');}
+    if(!silent)setRefreshing(false);
+  };
+
+  // 2-minute background poll
+  useEffect(()=>{
+    if(!config?.accessToken)return;
+    pollRef.current=setInterval(()=>doRefresh(configRef.current,true),120000);
+    return()=>clearInterval(pollRef.current);
+  },[config?.accessToken]);
+
+  const handleSignOut=()=>{setUser(null);setShowMenu(false);setConfig(p=>({...p,accessToken:null,tokenExpiry:null}));localStorage.removeItem(CONFIG_KEY);if(window.google)window.google.accounts.oauth2.revoke(config?.accessToken||'');};
+
+  const handleAddComment=async(taskId,text)=>{
+    const comment={id:'c_'+Date.now(),text,authorName:user.name,authorEmail:user.email,createdAt:Date.now()};
+    const updated=tasks.map(t=>t.id===taskId?{...t,comments:[...(t.comments||[]),comment]}:t);
+    setTasks(updated);
+    // Update comment task state too so drawer refreshes
+    const updatedTask=updated.find(t=>t.id===taskId);
+    setCommentTask(updatedTask);
+    await syncTask(updatedTask);
+  };
+
+  const handleDrop=(e,col)=>{
+    e.preventDefault();
+    const id=e.dataTransfer.getData('taskId');if(!id)return;
+    const task=tasks.find(t=>t.id===id);if(!task)return;
+    const now=Date.now();let updated=tasks;
+    if(col==='open')updated=tasks.map(t=>t.id===id?{...t,acceptedAt:null,completedAt:null,pausedAt:null,accumulatedMs:0,points:null}:t);
+    else if(col==='inprog'&&!task.acceptedAt)updated=tasks.map(t=>t.id===id?{...t,acceptedAt:now,accumulatedMs:0,pausedAt:null,assignedTo:t.assignedTo||user?.name||'Unknown'}:t);
+    setTasks(updated);setDragOver(null);
+  };
+
+  // Filter tasks for Mine view
+  const filterFn=t=>!filterMine||(t.assignedTo===user?.name||t.createdBy===user?.name);
+
+  const openTasks=sortTasks(tasks.filter(t=>!t.acceptedAt&&!t.completedAt&&filterFn(t)),sortBy);
+  const inProgTasks=sortTasks(tasks.filter(t=>t.acceptedAt&&!t.completedAt&&filterFn(t)),sortBy);
+  const doneTasks=sortTasks(tasks.filter(t=>t.completedAt&&filterFn(t)),sortBy==='date'?'date':sortBy);
+
+  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,fontSize:settings.fontSize||14,allCats:managedCats};
+
+  if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-e'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
+  if(!user)return <div className={settings.theme||'theme-e'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
+  if(loading)return(
+    <div className={settings.theme||'theme-e'} style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--bg)',flexDirection:'column',gap:'16px'}}>
+      <div className="spinner" style={{width:'28px',height:'28px',borderWidth:'3px'}}/>
+      <div style={{fontSize:'13px',fontFamily:'DM Mono,monospace',color:'var(--text2)'}}>Loading tasks from Sheets...</div>
+    </div>
+  );
+
+  const NAV=[{k:'board',icon:'⊞',label:'Board'},{k:'log',icon:'📋',label:'History'},{k:'scores',icon:'🏆',label:'Scores'},{k:'settings',icon:'⚙️',label:'Settings'}];
+
+  return(
+    <div className={`app ${settings.theme||'theme-e'}`} onClick={()=>showMenu&&setShowMenu(false)}>
+      {/* TOPBAR */}
+      <div className="topbar">
+        <div className="tb-badge">BV</div>
+        <span className="tb-logo">Bagavagabonds</span>
+        <div className="tb-sep"/>
+        <span className="tb-sub">Warehouse Ops</span>
+        <div className="tb-right">
+          {syncing?<div className="sync-row"><div className="spinner"/><span>syncing</span></div>:config?.sheetId?<div className="sync-row"><div className="sync-dot"/><span>synced</span></div>:null}
+          {NAV.map(v=>(<button key={v.k} className={`tb-tab${view===v.k?' active':''}`} onClick={()=>setView(v.k)}>{v.icon} {v.label}</button>))}
+          <button className="new-btn" onClick={()=>setShowNew(true)}>+ New task</button>
+          <div className="tb-av" onClick={e=>{e.stopPropagation();setShowMenu(!showMenu);}}>
+            {initials(user.name)}
+            {showMenu&&(
+              <div className="user-menu" onClick={e=>e.stopPropagation()}>
+                <div className="user-info"><div className="user-name">{user.name}</div><div className="user-email">{user.email}</div><span className="user-role">crew</span></div>
+                <button className="menu-item danger" onClick={handleSignOut}>Sign out</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* BOARD VIEW */}
+      {view==='board'&&(
+        <div className="body-layout">
+          <Sidebar tasks={tasks}/>
+          <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
+            {/* VIEW CONTROLS */}
+            <div className="view-controls">
+              <div className="toggle-group">
+                <button className={`toggle-btn${viewMode==='cards'?' active':''}`} onClick={()=>setViewMode('cards')}>⊞ Cards</button>
+                <button className={`toggle-btn${viewMode==='list'?' active':''}`} onClick={()=>setViewMode('list')}>≡ List</button>
+              </div>
+              <div className="vc-sep"/>
+              <div className="toggle-group">
+                <button className={`toggle-btn${!filterMine?' active':''}`} onClick={()=>setFilterMine(false)}>All</button>
+                <button className={`toggle-btn mine${filterMine?' active mine':''}`} onClick={()=>setFilterMine(true)}>Mine</button>
+              </div>
+              <div className="toggle-group vc-status">
+                <button className={`toggle-btn${statusFilter==='all'?' active':''}`} onClick={()=>setStatusFilter('all')}>All</button>
+                <button className={`toggle-btn${statusFilter==='open'?' active':''}`} onClick={()=>setStatusFilter('open')}>Open</button>
+                <button className={`toggle-btn${statusFilter==='inprog'?' active':''}`} onClick={()=>setStatusFilter('inprog')}>Active</button>
+                <button className={`toggle-btn${statusFilter==='done'?' active':''}`} onClick={()=>setStatusFilter('done')}>Done</button>
+              </div>
+              <div className="vc-sep"/>
+              <select className="sort-select" value={sortBy} onChange={e=>setSortBy(e.target.value)}>
+                <option value="date">↓ Date</option>
+                <option value="name">A–Z Name</option>
+                <option value="priority">Priority</option>
+                <option value="assignee">Assignee</option>
+              </select>
+              <button className="refresh-btn" onClick={()=>doRefresh(config)} disabled={refreshing}>
+                {refreshing?<div className="spinner" style={{width:'10px',height:'10px',borderWidth:'1.5px'}}/>:'↻'} Refresh
+              </button>
+              <div className="vc-count" style={{marginLeft:'auto',fontSize:'9px',fontFamily:'DM Mono,monospace',color:'var(--text3)'}}>
+                {filterMine?`Showing your tasks`:`${tasks.length} tasks total`}
+              </div>
+            </div>
+
+            {/* CARDS MODE */}
+            {viewMode==='cards'&&(
+              <div className="board-wrap">
+                <div className="board">
+                  {[
+                    {k:'open',  label:'Open',       color:'#7a1c1c',items:openTasks},
+                    {k:'inprog',label:'In Progress', color:'#9a6200',items:inProgTasks},
+                    {k:'done',  label:'Done',        color:'#285014',items:doneTasks},
+                  ].filter(col=>statusFilter==='all'||statusFilter===col.k).map(col=>(
+                    <div key={col.k} className={`col-wrap${dragOver===col.k?' drag-over':''}`}
+                      onDragOver={e=>{e.preventDefault();setDragOver(col.k);}} onDragLeave={()=>setDragOver(null)} onDrop={e=>handleDrop(e,col.k)}>
+                      <div className="col-head">
+                        <div className="cdot" style={{background:col.color}}/>
+                        <span className="clabel">{col.label}</span>
+                        <span className="ccount">{col.items.length}</span>
+                        {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={handleClearCompleted} title="Clear all completed">🗑️</button>}
+                      </div>
+                      <div className="col-body">
+                        {col.items.length===0&&<div className="col-empty">{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
+                        {col.items.map(t=><TaskCard key={t.id} task={t} {...cardProps}/>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* LIST MODE */}
+            {viewMode==='list'&&(
+              <div className="board-wrap">
+                <div className="list-view">
+                  {[
+                    {k:'open',  label:'Open',       color:'#cc3333',items:openTasks},
+                    {k:'inprog',label:'In Progress', color:'#c4682a',items:inProgTasks},
+                    {k:'done',  label:'Done',        color:'#4a8a4a',items:doneTasks},
+                  ].filter(col=>statusFilter==='all'||statusFilter===col.k).map(col=>(
+                    <div key={col.k}>
+                      <div className="list-section-head">
+                        <div className="list-section-dot" style={{background:col.color}}/>
+                        <span className="list-section-label">{col.label}</span>
+                        <span className="list-section-count">{col.items.length}</span>
+                        {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={handleClearCompleted} title="Clear all completed">🗑️</button>}
+                      </div>
+                      {col.items.length===0&&<div style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace',padding:'8px 4px 16px',fontStyle:'italic'}}>{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
+                      {col.items.map(t=><ListRow key={t.id} task={t} {...cardProps}/>)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config}/></div>}
+      {view==='scores'&&<div style={{flex:1,overflowY:'auto'}}><ScoresView tasks={tasks} manualBadges={manualBadges} demerits={demerits}/></div>}
+      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite}/></div>}
+
+      {/* MOBILE NAV */}
+      <nav className="mobile-nav">
+        {NAV.map(v=>(<button key={v.k} className={`mobile-nav-btn${view===v.k?' active':''}`} onClick={()=>setView(v.k)}><span className="mobile-nav-icon">{v.icon}</span><span className="mobile-nav-label">{v.label}</span></button>))}
+      </nav>
+
+      {/* MOBILE FAB */}
+      <button className="mobile-fab" onClick={()=>setShowNew(true)}>+</button>
+
+      {/* MODALS / OVERLAYS */}
+      {showNew&&<NewTaskModal currentUser={user} onClose={()=>setShowNew(false)} onSave={handleNewTask} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam}/>}
+      {editTask&&<NewTaskModal currentUser={user} onClose={()=>setEditTask(null)} onSave={handleEditSave} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} initialTask={editTask}/>}
+      {commentTask&&<CommentDrawer task={commentTask} user={user} onClose={()=>setCommentTask(null)} onAddComment={handleAddComment}/>}
+      {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+      {chaChing&&<ChaChing onDone={()=>setChaChing(false)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
