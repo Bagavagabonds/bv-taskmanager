@@ -94,6 +94,12 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .devdate{font-size:8px;color:var(--text3);font-family:'DM Mono',monospace;padding-left:9px;}
 .sstat{font-size:22px;font-weight:800;line-height:1.1;margin-top:12px;color:var(--text);}
 .ssub{font-size:8px;font-family:'DM Mono',monospace;color:var(--text3);margin-bottom:5px;}
+.hrs-list{margin-top:4px;font-family:'DM Mono',monospace;line-height:1.4;}
+.hrs-row{display:flex;justify-content:space-between;align-items:baseline;gap:6px;padding:1px 0;}
+.hrs-day{font-size:8px;font-weight:700;color:var(--text3);flex-shrink:0;letter-spacing:0.04em;}
+.hrs-val{font-size:8px;color:var(--text2);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.hrs-row.today .hrs-day{color:var(--amber);}
+.hrs-row.today .hrs-val{color:var(--amber);font-weight:600;}
 
 /* ── VIEW CONTROLS BAR ── */
 .view-controls{display:flex;align-items:center;gap:8px;padding:10px 16px 6px;flex-shrink:0;}
@@ -1065,7 +1071,7 @@ function ListEditor({items,onSave,addPlaceholder,asObjects}){
 }
 
 // ── SIDEBAR ────────────────────────────────────────────────────────────────
-function Sidebar({tasks}){
+function Sidebar({tasks,hours}){
   const now=new Date(),yr=now.getFullYear(),mo=now.getMonth();
   const moName=now.toLocaleString('en-US',{month:'long',year:'numeric'});
   const firstDay=new Date(yr,mo,1).getDay(),dim=new Date(yr,mo+1,0).getDate(),today=now.getDate();
@@ -1082,6 +1088,19 @@ function Sidebar({tasks}){
       <div className="cgrid">
         {['S','M','T','W','T','F','S'].map((d,i)=><div key={i} className="cdn">{d}</div>)}
         {days.map((d,i)=><div key={i} className={`cdd${d.e?' empty':d.d===today?' today':taskDays.has(d.d)?' has-task':''}`}>{d.d||''}</div>)}
+      </div>
+      <div className="slabel">Hours</div>
+      <div className="hrs-list">
+        {['mon','tue','wed','thu','fri','sat','sun'].map(k=>{
+          const isToday=DAY_KEYS[now.getDay()]===k;
+          const val=(hours&&hours[k])||'Closed';
+          return(
+            <div key={k} className={`hrs-row${isToday?' today':''}`}>
+              <span className="hrs-day">{k[0].toUpperCase()+k.slice(1)}</span>
+              <span className="hrs-val" title={val}>{val}</span>
+            </div>
+          );
+        })}
       </div>
       <div className="slabel">Due soon</div>
       {upcoming.length===0&&<div style={{fontSize:'9px',color:'var(--text3)',fontFamily:'DM Mono,monospace',fontStyle:'italic'}}>none set</div>}
@@ -1712,8 +1731,6 @@ function App(){
         <span className="tb-logo">Bagavagabonds</span>
         <div className="tb-sep"/>
         <span className="tb-sub">Warehouse Ops</span>
-        <div className="tb-sep"/>
-        <span className="tb-sub" title={`${DAY_LABELS[new Date().getDay()]} hours`}>{todayHours(hours)}</span>
         <div className="tb-right">
           {syncing?<div className="sync-row"><div className="spinner"/><span>syncing</span></div>:config?.sheetId?<div className="sync-row"><div className="sync-dot"/><span>synced</span></div>:null}
           {NAV.map(v=>(<button key={v.k} className={`tb-tab${view===v.k?' active':''}`} onClick={()=>setView(v.k)}>{v.icon} {v.label}</button>))}
@@ -1733,7 +1750,7 @@ function App(){
       {/* BOARD VIEW */}
       {view==='board'&&(
         <div className="body-layout">
-          <Sidebar tasks={tasks}/>
+          <Sidebar tasks={tasks} hours={hours}/>
           <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
             {/* VIEW CONTROLS */}
             <div className="view-controls">
