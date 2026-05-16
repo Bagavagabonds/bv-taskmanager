@@ -410,6 +410,7 @@ const MANAGED_CLIENTS_KEY= 'bvb_clients_v2';
 const MANAGED_CATS_KEY   = 'bvb_cats_v2';
 const DELETED_IDS_KEY    = 'bvb_deleted_v1';
 const HOURS_KEY          = 'bvb_hours_v1';
+const PERMISSIONS_KEY    = 'bvb_permissions_v1';
 const DEFAULT_PIN        = '1234';
 
 const DAY_KEYS   = ['sun','mon','tue','wed','thu','fri','sat'];
@@ -424,6 +425,10 @@ const DEFAULT_HOURS = {
   sun: 'Closed',
 };
 function todayHours(hours){ const d=new Date().getDay(); return (hours&&hours[DAY_KEYS[d]])||'Closed'; }
+
+// Permissions — default to allow everything; only exceptions are stored.
+function userCanCreate(perms,email){ if(!email||!perms)return true; const p=perms[email]; return !p||p.canCreate!==false; }
+function userCanAssignOthers(perms,email){ if(!email||!perms)return true; const p=perms[email]; return !p||p.canAssignOthers!==false; }
 
 // ── SAFE STORAGE ── (handles quota errors / iOS private mode)
 let __storageWarned = false;
@@ -751,14 +756,15 @@ function CommentDrawer({task, user, onClose, onAddComment}){
 }
 
 // ── NEW TASK MODAL ─────────────────────────────────────────────────────────
-function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,projects,onSaveClients,onSaveCats,onSaveProjects,allTeam,initialTask}){
+function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,projects,onSaveClients,onSaveCats,onSaveProjects,allTeam,initialTask,canAssignOthers=true}){
   const isEdit=!!initialTask;
+  const lockedEmail=!canAssignOthers&&!isEdit?(currentUser?.email||''):null;
   const [form,setForm]=useState(isEdit?{
     title:initialTask.title||'',desc:initialTask.desc||'',category:initialTask.category||'other',
     priority:initialTask.priority||'med',deadline:initialTask.deadline||'',
     assignedToEmail:initialTask.assignedToEmail||'',client:initialTask.client||'General / Internal',
     project:initialTask.project||'',noteColor:initialTask.noteColor||'',
-  }:{title:'',desc:'',category:'other',priority:'med',deadline:'',assignedToEmail:'',client:'General / Internal',project:'',noteColor:''});
+  }:{title:'',desc:'',category:'other',priority:'med',deadline:'',assignedToEmail:lockedEmail||'',client:'General / Internal',project:'',noteColor:''});
   const [editMode,setEditMode]=useState(null); // null | 'clients' | 'cats' | 'projects'
   const colorInputRef=useRef(null);
   const hasEyeDropper=typeof EyeDropper!=='undefined';
@@ -907,7 +913,9 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
           {!pickerBase&&<div className="field"><label>Priority</label><select value={form.priority} onChange={e=>set('priority',e.target.value)}><option value="high">High</option><option value="med">Medium</option><option value="low">Low</option></select></div>}
         </div>
         <div className="field"><label>Deadline (optional)</label><input type="date" value={form.deadline} onChange={e=>set('deadline',e.target.value)}/></div>
-        <EmailField value={form.assignedToEmail} onChange={v=>set('assignedToEmail',v)} team={allTeam}/>
+        {canAssignOthers||isEdit
+          ? <EmailField value={form.assignedToEmail} onChange={v=>set('assignedToEmail',v)} team={allTeam}/>
+          : <div className="field"><label>Assign to</label><div style={{padding:'9px 14px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'6px',fontSize:'13px',color:'var(--text2)',fontFamily:'DM Mono,monospace'}}>{currentUser?.name||currentUser?.email||'You'}</div></div>}
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onClose}>Cancel</button>
           <button className="btn-post" onClick={save} disabled={!form.title.trim()}>{isEdit?'Save changes':'Post task'}</button>
@@ -1201,7 +1209,7 @@ function ScoresView({tasks,manualBadges,demerits}){
 }
 
 // ── SETTINGS VIEW ──────────────────────────────────────────────────────────
-function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange}){
+function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange,permissions,onPermissionsChange}){
   const [draft,setDraft]=useState(settings);
   const [saved,setSaved]=useState(false);
   const [devOpen,setDevOpen]=useState(false);
@@ -1340,6 +1348,45 @@ function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onMa
               </div>
               <button className="btn-cancel" style={{fontSize:'11px',marginTop:'10px'}} onClick={()=>{if(window.confirm('Reset all hours to defaults?'))onHoursChange({...DEFAULT_HOURS});}}>Reset to defaults</button>
             </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Permissions</div>
+              <p style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace',marginBottom:'12px'}}>Defaults are on for everyone. Toggle off to restrict. Syncs to all devices.</p>
+              <div style={{background:'var(--bg3)',borderRadius:'7px',overflow:'hidden',border:'1px solid var(--border)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'7px 14px',borderBottom:'1px solid var(--border)',background:'var(--bg2)'}}>
+                  <div style={{flex:1,fontSize:'9px',fontWeight:'800',letterSpacing:'0.1em',textTransform:'uppercase',color:'var(--text3)',fontFamily:'DM Mono,monospace'}}>Member</div>
+                  <div style={{width:'90px',textAlign:'center',fontSize:'9px',fontWeight:'800',letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',fontFamily:'DM Mono,monospace'}}>Create</div>
+                  <div style={{width:'90px',textAlign:'center',fontSize:'9px',fontWeight:'800',letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',fontFamily:'DM Mono,monospace'}}>Assign others</div>
+                </div>
+                {allTeam.map(m=>{
+                  const p=permissions?.[m.email]||{};
+                  const canC=p.canCreate!==false;
+                  const canA=p.canAssignOthers!==false;
+                  const toggle=(key,val)=>{
+                    const next={...permissions};
+                    const cur={...(next[m.email]||{})};
+                    cur[key]=val;
+                    // Drop entry if both flags are back to default (true)
+                    if(cur.canCreate!==false&&cur.canAssignOthers!==false){delete next[m.email];}
+                    else{next[m.email]=cur;}
+                    onPermissionsChange(next);
+                  };
+                  return(
+                    <div key={m.email} style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 14px',borderBottom:'1px solid var(--border)'}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:'12px',fontWeight:'700',color:'var(--text)'}}>{m.name}</div>
+                        <div style={{fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.email}</div>
+                      </div>
+                      <label style={{width:'90px',display:'flex',justifyContent:'center',cursor:'pointer'}}>
+                        <input type="checkbox" checked={canC} onChange={e=>toggle('canCreate',e.target.checked)} style={{cursor:'pointer',width:'16px',height:'16px',accentColor:'var(--amber)'}}/>
+                      </label>
+                      <label style={{width:'90px',display:'flex',justifyContent:'center',cursor:'pointer'}}>
+                        <input type="checkbox" checked={canA} onChange={e=>toggle('canAssignOthers',e.target.checked)} style={{cursor:'pointer',width:'16px',height:'16px',accentColor:'var(--amber)'}}/>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             <button className="btn-cancel" style={{fontSize:'12px',alignSelf:'flex-start'}} onClick={()=>setAdminUnlocked(false)}>🔒 Lock admin panel</button>
           </div>
         )}
@@ -1385,6 +1432,7 @@ function App(){
   const [tasks,setTasks]=useState(()=>getSaved(TASKS_KEY)||[]);
   const [settings,setSettings]=useState(()=>getSaved(SETTINGS_KEY)||{theme:'theme-foundry',fontSize:14,viewMode:isMobileWidth()?'list':'cards'});
   const [hours,setHours]=useState(()=>getSaved(HOURS_KEY)||DEFAULT_HOURS);
+  const [permissions,setPermissions]=useState(()=>getSaved(PERMISSIONS_KEY)||{});
   const [manualBadges,setManualBadges]=useState(()=>getSaved(BADGES_KEY)||{});
   const [demerits,setDemerits]=useState(()=>getSaved(DEMERITS_KEY)||[]);
   const [view,setView]=useState('board');
@@ -1413,6 +1461,7 @@ function App(){
   const configRef=useRef(config);
   const deletedIdsRef=useRef(deletedIds);
   const pushingHoursRef=useRef(false);
+  const pushingPermsRef=useRef(false);
   useEffect(()=>{configRef.current=config;},[config]);
   useEffect(()=>{deletedIdsRef.current=deletedIds;},[deletedIds]);
 
@@ -1428,6 +1477,7 @@ function App(){
   useEffect(()=>{safeStore(MANAGED_CLIENTS_KEY,managedClients);},[managedClients]);
   useEffect(()=>{safeStore(CUSTOM_TEAM_KEY,customTeam);},[customTeam]);
   useEffect(()=>{safeStore(HOURS_KEY,hours);},[hours]);
+  useEffect(()=>{safeStore(PERMISSIONS_KEY,permissions);},[permissions]);
   useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-foundry');},[settings.theme]);
 
   // ── Try to restore session from stored token ──
@@ -1570,6 +1620,15 @@ function App(){
   const handleSaveProjects=(client,list)=>setProjects(prev=>({...prev,[client]:list}));
   const handleAddUser=(name,email)=>{if(!allTeam.find(t=>t.email===email))setCustomTeam(prev=>[...prev,{name,email}]);};
 
+  const handlePermissionsChange=async(newPerms)=>{
+    setPermissions(newPerms);
+    if(!config?.accessToken)return;
+    pushingPermsRef.current=true;
+    try{ await saveAppConfigKey(configRef.current,'permissions',newPerms); }
+    catch(e){ showToast('Permissions saved locally — sheet sync failed','error'); }
+    finally{ setTimeout(()=>{pushingPermsRef.current=false;},1500); }
+  };
+
   const handleHoursChange=async(newHours)=>{
     setHours(newHours);
     if(!config?.accessToken)return;
@@ -1622,13 +1681,12 @@ function App(){
       }else{
         if(!silent)showToast('Sheet appears empty — keeping local data','');
       }
-      // Pull shared app-config (hours, etc.) — skip if we're mid-push to avoid clobbering local edits
-      if(!pushingHoursRef.current){
-        try{
-          const appCfg=await loadAppConfig(cfg);
-          if(appCfg.hours&&typeof appCfg.hours==='object')setHours(appCfg.hours);
-        }catch(e){/* ignore */}
-      }
+      // Pull shared app-config (hours, permissions) — skip portions mid-push to avoid clobbering
+      try{
+        const appCfg=await loadAppConfig(cfg);
+        if(!pushingHoursRef.current&&appCfg.hours&&typeof appCfg.hours==='object')setHours(appCfg.hours);
+        if(!pushingPermsRef.current&&appCfg.permissions&&typeof appCfg.permissions==='object')setPermissions(appCfg.permissions);
+      }catch(e){/* ignore */}
     }catch{if(!silent)showToast('Refresh failed','error');}
     if(!silent)setRefreshing(false);
   };
@@ -1734,7 +1792,7 @@ function App(){
         <div className="tb-right">
           {syncing?<div className="sync-row"><div className="spinner"/><span>syncing</span></div>:config?.sheetId?<div className="sync-row"><div className="sync-dot"/><span>synced</span></div>:null}
           {NAV.map(v=>(<button key={v.k} className={`tb-tab${view===v.k?' active':''}`} onClick={()=>setView(v.k)}>{v.icon} {v.label}</button>))}
-          <button className="new-btn" onClick={()=>setShowNew(true)}>+ New task</button>
+          {userCanCreate(permissions,user.email)&&<button className="new-btn" onClick={()=>setShowNew(true)}>+ New task</button>}
           <div className="tb-av" onClick={e=>{e.stopPropagation();setShowMenu(!showMenu);}}>
             {initials(user.name)}
             {showMenu&&(
@@ -1840,7 +1898,7 @@ function App(){
 
       {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config}/></div>}
       {view==='scores'&&<div style={{flex:1,overflowY:'auto'}}><ScoresView tasks={tasks} manualBadges={manualBadges} demerits={demerits}/></div>}
-      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange}/></div>}
+      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange} permissions={permissions} onPermissionsChange={handlePermissionsChange}/></div>}
 
       {/* MOBILE NAV */}
       <nav className="mobile-nav">
@@ -1851,7 +1909,7 @@ function App(){
       <button className="mobile-fab" onClick={()=>setShowNew(true)}>+</button>
 
       {/* MODALS / OVERLAYS */}
-      {showNew&&<NewTaskModal currentUser={user} onClose={()=>setShowNew(false)} onSave={handleNewTask} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam}/>}
+      {showNew&&<NewTaskModal currentUser={user} onClose={()=>setShowNew(false)} onSave={handleNewTask} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} canAssignOthers={userCanAssignOthers(permissions,user.email)}/>}
       {editTask&&<NewTaskModal currentUser={user} onClose={()=>setEditTask(null)} onSave={handleEditSave} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} initialTask={editTask}/>}
       {commentTask&&<CommentDrawer task={commentTask} user={user} onClose={()=>setCommentTask(null)} onAddComment={handleAddComment}/>}
       {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
