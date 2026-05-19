@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Bagavagabonds · Task Board</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%23a83828'/><text x='32' y='41' font-family='Arial Black,Arial,sans-serif' font-size='22' font-weight='900' fill='%23f5c5a3' text-anchor='middle'>BV</text></svg>"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -423,6 +424,7 @@ const HOURS_KEY          = 'bvb_hours_v1';
 const PERMISSIONS_KEY    = 'bvb_permissions_v1';
 const MANUAL_ORDER_KEY   = 'bvb_manual_order_v1';
 const DEFAULT_PIN        = '1234';
+const APP_VERSION        = '1.0.0';
 
 const DAY_KEYS   = ['sun','mon','tue','wed','thu','fri','sat'];
 const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1451,6 +1453,9 @@ function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onMa
             <button className="btn-cancel" style={{fontSize:'12px',alignSelf:'flex-start'}} onClick={()=>setAdminUnlocked(false)}>🔒 Lock admin panel</button>
           </div>
         )}
+      </div>
+      <div style={{textAlign:'center',padding:'12px 0 24px',fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em'}}>
+        BV Task Board · v{APP_VERSION}
       </div>
     </div>
   );
