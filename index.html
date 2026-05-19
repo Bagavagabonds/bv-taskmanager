@@ -38,9 +38,9 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 /* ── AUTH ── */
 .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden;}
 .auth-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px);background-size:22px 22px;pointer-events:none;}
-.auth-card{position:relative;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:48px 52px;width:min(420px,90vw);text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.5);}
+.auth-card{position:relative;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:clamp(30px,8vw,48px) clamp(22px,6vw,52px);width:min(420px,94vw);text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.5);box-sizing:border-box;}
 .auth-badge{width:44px;height:44px;border-radius:50%;background:var(--crimson);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#f5c5a3;margin:0 auto 22px;box-shadow:0 2px 10px rgba(0,0,0,0.4);}
-.auth-title{font-size:24px;font-weight:800;margin-bottom:10px;}
+.auth-title{font-size:clamp(20px,7vw,28px);font-weight:800;margin-bottom:10px;word-break:break-word;line-height:1.1;}
 .auth-sub{font-size:13px;color:var(--text2);margin-bottom:34px;line-height:1.6;font-family:'DM Mono',monospace;}
 .auth-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--crimson);color:#f5c5a3;font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;border:none;border-radius:8px;padding:14px 24px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.35);}
 .auth-btn:hover{background:var(--crimson2);}
@@ -134,7 +134,7 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .nph{background:rgba(122,28,28,0.14);color:#7a1c1c;}.npm{background:rgba(160,100,0,0.14);color:#6e4600;}.npl{background:rgba(40,80,15,0.14);color:#285014;}
 .ncat{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(20,10,10,0.45);margin-bottom:5px;font-family:'DM Mono',monospace;}
 .ntitle{font-size:14px;font-weight:700;color:#1a0e0e;line-height:1.3;margin-bottom:4px;padding-right:44px;}
-.ndesc{font-size:11.5px;color:rgba(20,10,10,0.6);line-height:1.45;margin-bottom:7px;}
+.ndesc{font-size:11.5px;color:rgba(20,10,10,0.6);line-height:1.45;margin-bottom:7px;white-space:pre-wrap;word-break:break-word;}
 .ndl{font-size:9px;font-family:'DM Mono',monospace;color:#7a1c1c;margin-bottom:6px;}
 .ndl.overdue{color:#cc0000;font-weight:700;}
 .ntimer{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#7a1c1c;margin-top:6px;font-weight:500;}
@@ -148,6 +148,16 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .nbtn.danger{background:rgba(122,28,28,0.1);color:#7a1c1c;border-color:rgba(122,28,28,0.15);}
 .nbtn.danger:hover{background:rgba(122,28,28,0.2);}
 .nbtn.comment{background:rgba(20,10,10,0.07);color:rgba(20,10,10,0.55);}
+.nbtn.reorder{background:rgba(20,10,10,0.05);color:rgba(20,10,10,0.45);padding:4px 8px;font-size:11px;line-height:1;}
+.nbtn.reorder:hover{background:rgba(20,10,10,0.14);color:rgba(20,10,10,0.75);}
+.lr-reorder{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:6px 6px;line-height:1;border-radius:4px;}
+.lr-reorder:hover{color:var(--text);background:var(--bg3);}
+.resume-banner{display:flex;align-items:center;gap:10px;padding:9px 16px;background:var(--amber-dim);border-bottom:1px solid var(--amber);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;flex-wrap:wrap;}
+.resume-banner-msg{flex:1;min-width:200px;}
+.resume-banner-msg b{color:var(--amber);font-weight:700;}
+.resume-banner button{font-size:10px;padding:6px 11px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
+.resume-banner button.primary{background:var(--amber);color:#1a0e0e;border-color:var(--amber);}
+.resume-banner button:hover{opacity:0.88;}
 .by-line{font-size:9px;color:rgba(20,10,10,0.38);font-family:'DM Mono',monospace;margin-top:7px;}
 .pts-badge{display:inline-flex;align-items:center;font-size:9px;font-family:'DM Mono',monospace;background:rgba(20,10,10,0.08);border-radius:3px;padding:2px 6px;color:rgba(20,10,10,0.5);margin-top:4px;}
 
@@ -168,7 +178,7 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .lr-expand{font-size:10px;color:var(--text3);flex-shrink:0;transition:transform 0.15s;}
 .lr-expand.open{transform:rotate(180deg);}
 .list-row-detail{padding:0 14px 12px;border-top:1px solid var(--border);background:var(--bg3);}
-.lrd-desc{font-size:12px;color:var(--text2);line-height:1.5;padding:10px 0 8px;font-family:'DM Mono',monospace;}
+.lrd-desc{font-size:12px;color:var(--text2);line-height:1.5;padding:10px 0 8px;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-word;}
 .lrd-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
 .lrd-tag{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);background:var(--bg4);border-radius:4px;padding:2px 8px;}
 .lrd-btns{display:flex;gap:6px;flex-wrap:wrap;}
@@ -411,6 +421,7 @@ const MANAGED_CATS_KEY   = 'bvb_cats_v2';
 const DELETED_IDS_KEY    = 'bvb_deleted_v1';
 const HOURS_KEY          = 'bvb_hours_v1';
 const PERMISSIONS_KEY    = 'bvb_permissions_v1';
+const MANUAL_ORDER_KEY   = 'bvb_manual_order_v1';
 const DEFAULT_PIN        = '1234';
 
 const DAY_KEYS   = ['sun','mon','tue','wed','thu','fri','sat'];
@@ -526,11 +537,37 @@ function fmtTime(ms){if(!ms)return'—';return new Date(ms).toLocaleString('en-U
 function fmtShort(ms){if(!ms)return'';return new Date(ms).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true});}
 function isOverdue(dl){return dl&&new Date(dl+'T23:59:59')<new Date();}
 function taskPts(task){return({high:3,med:2,low:1}[task.priority]||1)+(task.duration&&task.duration<600000?1:0);}
+
+// Auto-pause: timers only run between 8am and 8pm. If a timer was running across a past 8pm
+// boundary, we retroactively pause it at that boundary so phantom hours don't accumulate.
+function computeAutoPauseTime(task,nowMs){
+  if(!task.acceptedAt||task.completedAt||task.pausedAt)return null;
+  const acceptedDate=new Date(task.acceptedAt);
+  const eightPmSameDay=new Date(acceptedDate);eightPmSameDay.setHours(20,0,0,0);
+  let candidate;
+  if(acceptedDate.getTime()<eightPmSameDay.getTime()){
+    candidate=eightPmSameDay.getTime();
+  }else{
+    const nextDay=new Date(acceptedDate);nextDay.setDate(nextDay.getDate()+1);nextDay.setHours(20,0,0,0);
+    candidate=nextDay.getTime();
+  }
+  return candidate<nowMs?candidate:null;
+}
 function currentMonth(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;}
 function isMobileWidth(){return window.innerWidth<768;}
 
-function sortTasks(arr,sortBy){
+function sortTasks(arr,sortBy,manualOrder){
   const a=[...arr];
+  if(sortBy==='manual'&&Array.isArray(manualOrder)&&manualOrder.length){
+    const orderMap=new Map(manualOrder.map((id,i)=>[id,i]));
+    return a.sort((x,y)=>{
+      const ox=orderMap.get(x.id),oy=orderMap.get(y.id);
+      if(ox===undefined&&oy===undefined)return(y.createdAt||0)-(x.createdAt||0);
+      if(ox===undefined)return-1;
+      if(oy===undefined)return 1;
+      return ox-oy;
+    });
+  }
   if(sortBy==='name')return a.sort((x,y)=>x.title.localeCompare(y.title));
   if(sortBy==='priority'){const p={high:0,med:1,low:2};return a.sort((x,y)=>(p[x.priority]||1)-(p[y.priority]||1));}
   if(sortBy==='assignee')return a.sort((x,y)=>(x.assignedTo||'').localeCompare(y.assignedTo||''));
@@ -668,6 +705,19 @@ async function sendEmail(cfg,task){
     await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({raw:enc})});
   }catch(e){console.warn('email',e);}
 }
+async function sendCompletionEmail(cfg,task,completedByName,completedByEmail){
+  if(!cfg.accessToken||!task.createdByEmail)return;
+  // Don't email the creator if they completed it themselves
+  if(completedByEmail&&task.createdByEmail.toLowerCase()===completedByEmail.toLowerCase())return;
+  try{
+    const sub=`[BV Tasks] Completed: ${task.title}`;
+    const dur=task.duration?fmtDur(task.duration):'—';
+    const body=`Hi ${task.createdBy||'there'},\n\nYour task has been completed.\n\nTitle: ${task.title}\nCompleted by: ${completedByName||task.assignedTo||'(unknown)'}\nTime spent: ${dur}\nPoints: +${task.points||0}${task.client?`\nClient: ${task.client}`:''}\n${task.desc?`\nDetails: ${task.desc}\n`:''}\nhttps://bagavagabonds.github.io/bv-taskmanager/\n\n— Bagavagabonds Task Board`;
+    const raw=[`To: ${task.createdByEmail}`,`Subject: ${sub}`,'Content-Type: text/plain; charset=utf-8','',body].join('\n');
+    const enc=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({raw:enc})});
+  }catch(e){console.warn('completion email',e);}
+}
 
 // ── CHA-CHING ──────────────────────────────────────────────────────────────
 function ChaChing({onDone}){
@@ -680,7 +730,7 @@ function ChaChing({onDone}){
 
 // ── TOAST ──────────────────────────────────────────────────────────────────
 function Toast({msg,type,onDone}){
-  useEffect(()=>{const t=setTimeout(onDone,type==='error'?5500:3200);return()=>clearTimeout(t);},[]);
+  useEffect(()=>{const t=setTimeout(onDone,type==='error'?5500:3200);return()=>clearTimeout(t);},[msg,type]);
   return<div className={`toast ${type}`}>{msg}</div>;
 }
 
@@ -913,9 +963,9 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
           {!pickerBase&&<div className="field"><label>Priority</label><select value={form.priority} onChange={e=>set('priority',e.target.value)}><option value="high">High</option><option value="med">Medium</option><option value="low">Low</option></select></div>}
         </div>
         <div className="field"><label>Deadline (optional)</label><input type="date" value={form.deadline} onChange={e=>set('deadline',e.target.value)}/></div>
-        {canAssignOthers||isEdit
+        {canAssignOthers
           ? <EmailField value={form.assignedToEmail} onChange={v=>set('assignedToEmail',v)} team={allTeam}/>
-          : <div className="field"><label>Assign to</label><div style={{padding:'9px 14px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'6px',fontSize:'13px',color:'var(--text2)',fontFamily:'DM Mono,monospace'}}>{currentUser?.name||currentUser?.email||'You'}</div></div>}
+          : <div className="field"><label>Assign to</label><div style={{padding:'9px 14px',background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:'6px',fontSize:'13px',color:'var(--text2)',fontFamily:'DM Mono,monospace'}}>{isEdit?(allTeam.find(t=>t.email===form.assignedToEmail)?.name||form.assignedToEmail||'Unassigned'):(currentUser?.name||currentUser?.email||'You')}</div></div>}
         <div className="modal-actions">
           <button className="btn-cancel" onClick={onClose}>Cancel</button>
           <button className="btn-post" onClick={save} disabled={!form.title.trim()}>{isEdit?'Save changes':'Post task'}</button>
@@ -926,7 +976,7 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
 }
 
 // ── TASK CARD ──────────────────────────────────────────────────────────────
-function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,fontSize,allCats}){
+function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,fontSize,allCats}){
   const {col,hex,rot}=noteStyle(task.id,task.priority,task.noteColor);
   const prioClass=hex?'':(task.priority==='high'?' prio-high':task.priority==='low'?' prio-low':'');
   const isDone=!!task.completedAt;
@@ -949,17 +999,20 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
       {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{task.desc}</div>}
       {task.deadline&&<div className={`ndl${overdue?' overdue':''}`} style={{fontSize:(fs*0.64)+'px'}}>{overdue?'⚠ Overdue: ':'📅 '}{task.deadline}</div>}
       {isActive&&<div className="ntimer" style={{fontSize:(fs*0.71)+'px'}}><div className="npulse"/>{elapsed}</div>}
-      {isPaused&&<div className="npaused" style={{fontSize:(fs*0.71)+'px'}}>⏸ Paused · {elapsed}</div>}
+      {isPaused&&(task.accumulatedMs||0)>0&&<div className="npaused" style={{fontSize:(fs*0.71)+'px'}}>{task.autoPausedAt?'⏸ Auto-paused · ':'⏸ Paused · '}{elapsed}</div>}
+      {isPaused&&(task.accumulatedMs||0)===0&&<div className="npaused" style={{fontSize:(fs*0.71)+'px'}}>⏱ Ready — press ▶ Start</div>}
       {isDone&&task.duration&&<div className="done-log" style={{fontSize:(fs*0.64)+'px'}}>✓ {fmtDur(task.duration)} · {task.assignedTo||'—'}</div>}
       {isDone&&task.points&&<div className="pts-badge" style={{fontSize:(fs*0.64)+'px'}}>+{task.points} pts</div>}
       <div className="nbtns">
         {!task.acceptedAt&&!isDone&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onAccept(task)}>▶ Accept</button>}
         {isActive&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onPause(task)}>⏸ Pause</button>}
-        {isPaused&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onResume(task)}>▶ Resume</button>}
+        {isPaused&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onResume(task)}>{(task.accumulatedMs||0)===0?'▶ Start':'▶ Resume'}</button>}
         {(isActive||isPaused)&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onComplete(task)}>✓ Done</button>}
         <button className="nbtn comment" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onComment(task)}>💬{commentCount>0?` ${commentCount}`:''}</button>
         {!isDone&&<button className="nbtn" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onEdit(task)}>✎</button>}
         <button className="nbtn danger" style={{fontSize:(fs*0.64)+'px'}} onClick={()=>onDelete(task.id)}>✕</button>
+        {onMoveUp&&<button className="nbtn reorder" title="Move up" onClick={()=>onMoveUp(task)}>▲</button>}
+        {onMoveDown&&<button className="nbtn reorder" title="Move down" onClick={()=>onMoveDown(task)}>▼</button>}
       </div>
       <div className="by-line" style={{fontSize:(fs*0.64)+'px'}}>{task.assignedTo&&!isDone?`→ ${task.assignedTo} · `:''}{task.createdBy} · {fmtTime(task.createdAt)}</div>
     </div>
@@ -967,7 +1020,7 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
 }
 
 // ── LIST ROW ───────────────────────────────────────────────────────────────
-function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,allCats}){
+function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,allCats}){
   const [open,setOpen]=useState(false);
   const isDone=!!task.completedAt;
   const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
@@ -993,11 +1046,13 @@ function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,o
         <div className={`lr-title${isDone?' is-done':''}`}>{task.title}</div>
         {displayName&&<div className="lr-assignee">{displayName}</div>}
         {commentCount>0&&<div className="lr-comment-badge">💬{commentCount}</div>}
+        {onMoveUp&&<button className="lr-reorder" title="Move up" onClick={e=>{e.stopPropagation();onMoveUp(task);}}>▲</button>}
+        {onMoveDown&&<button className="lr-reorder" title="Move down" onClick={e=>{e.stopPropagation();onMoveDown(task);}}>▼</button>}
         <div className={`lr-expand${open?' open':''}`}>▾</div>
       </div>
       {open&&(
         <div className="list-row-detail">
-          {(isActive||isPaused)&&<div className="lrd-timer">{isActive?<><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block',animation:'pp 1.2s infinite'}}/>Running: {elapsed}</>:<>⏸ Paused: {elapsed}</>}</div>}
+          {(isActive||isPaused)&&<div className="lrd-timer">{isActive?<><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block',animation:'pp 1.2s infinite'}}/>Running: {elapsed}</>:(task.accumulatedMs||0)===0?<>⏱ Ready — press ▶ Start</>:<>{task.autoPausedAt?'⏸ Auto-paused: ':'⏸ Paused: '}{elapsed}</>}</div>}
           {task.desc&&<div className="lrd-desc">{task.desc}</div>}
           <div className="lrd-meta">
             <span className="lrd-tag">{(allCats||CATS).find(c=>c.id===task.category)?.label||task.category}</span>
@@ -1010,7 +1065,7 @@ function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,o
           <div className="lrd-btns">
             {!task.acceptedAt&&!isDone&&<button className="lrd-btn primary" onClick={()=>onAccept(task)}>▶ Accept</button>}
             {isActive&&<button className="lrd-btn" onClick={()=>onPause(task)}>⏸ Pause</button>}
-            {isPaused&&<button className="lrd-btn primary" onClick={()=>onResume(task)}>▶ Resume</button>}
+            {isPaused&&<button className="lrd-btn primary" onClick={()=>onResume(task)}>{(task.accumulatedMs||0)===0?'▶ Start':'▶ Resume'}</button>}
             {(isActive||isPaused)&&<button className="lrd-btn primary" onClick={()=>onComplete(task)}>✓ Done</button>}
             <button className="lrd-btn" onClick={()=>onComment(task)}>💬 Comments{commentCount>0?` (${commentCount})`:''}</button>
             {!task.completedAt&&<button className="lrd-btn" onClick={()=>onEdit(task)}>✎ Edit</button>}
@@ -1080,6 +1135,12 @@ function ListEditor({items,onSave,addPlaceholder,asObjects}){
 
 // ── SIDEBAR ────────────────────────────────────────────────────────────────
 function Sidebar({tasks,hours}){
+  // Re-render once a day at midnight so the calendar/today indicators stay accurate when left open overnight.
+  const [,setDayKey]=useState(()=>new Date().toDateString());
+  useEffect(()=>{
+    const id=setInterval(()=>{const k=new Date().toDateString();setDayKey(prev=>prev===k?prev:k);},60000);
+    return()=>clearInterval(id);
+  },[]);
   const now=new Date(),yr=now.getFullYear(),mo=now.getMonth();
   const moName=now.toLocaleString('en-US',{month:'long',year:'numeric'});
   const firstDay=new Date(yr,mo,1).getDay(),dim=new Date(yr,mo+1,0).getDate(),today=now.getDate();
@@ -1448,7 +1509,15 @@ function App(){
 
   const [commentTask,setCommentTask]=useState(null);
   const [editTask,setEditTask]=useState(null);
-  const [sortBy,setSortBy]=useState('date');
+  const [sortBy,setSortByRaw]=useState('date');
+  const [manualOrder,setManualOrder]=useState(()=>{
+    const saved=getSaved(MANUAL_ORDER_KEY);
+    if(Array.isArray(saved))return saved;
+    // Migrate old map format ({taskId: number}) to array
+    if(saved&&typeof saved==='object')return Object.entries(saved).sort(([,a],[,b])=>a-b).map(([id])=>id);
+    return [];
+  });
+  const setSortBy=newSort=>{ setSortByRaw(newSort); if(newSort!=='manual')setManualOrder([]); };
   const [statusFilter,setStatusFilter]=useState('all');
   const [managedCats,setManagedCats]=useState(()=>getSaved(MANAGED_CATS_KEY)||[...CATS]);
   const [projects,setProjects]=useState(()=>getSaved(PROJECTS_KEY)||{});
@@ -1462,6 +1531,8 @@ function App(){
   const deletedIdsRef=useRef(deletedIds);
   const pushingHoursRef=useRef(false);
   const pushingPermsRef=useRef(false);
+  const tasksRef=useRef(tasks);
+  useEffect(()=>{tasksRef.current=tasks;},[tasks]);
   useEffect(()=>{configRef.current=config;},[config]);
   useEffect(()=>{deletedIdsRef.current=deletedIds;},[deletedIds]);
 
@@ -1478,6 +1549,7 @@ function App(){
   useEffect(()=>{safeStore(CUSTOM_TEAM_KEY,customTeam);},[customTeam]);
   useEffect(()=>{safeStore(HOURS_KEY,hours);},[hours]);
   useEffect(()=>{safeStore(PERMISSIONS_KEY,permissions);},[permissions]);
+  useEffect(()=>{safeStore(MANUAL_ORDER_KEY,manualOrder);},[manualOrder]);
   useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-foundry');},[settings.theme]);
 
   // ── Try to restore session from stored token ──
@@ -1562,8 +1634,8 @@ function App(){
 
   const handleAccept=async task=>{
     const now=Date.now();
-    const updated=tasks.map(t=>t.id===task.id?{...t,acceptedAt:now,accumulatedMs:0,pausedAt:null,assignedTo:t.assignedTo||user?.name||'Unknown'}:t);
-    setTasks(updated);playSound('accept');showToast('Task accepted — timer started ⏱','success');
+    const updated=tasks.map(t=>t.id===task.id?{...t,acceptedAt:now,accumulatedMs:0,pausedAt:now,autoPausedAt:null,assignedTo:t.assignedTo||user?.name||'Unknown'}:t);
+    setTasks(updated);playSound('accept');showToast('Claimed — press ▶ Start when ready','success');
     await syncTask(updated.find(t=>t.id===task.id));
   };
 
@@ -1575,8 +1647,17 @@ function App(){
 
   const handleResume=async task=>{
     const now=Date.now();
-    const updated=tasks.map(t=>t.id===task.id?{...t,pausedAt:null,acceptedAt:now}:t);
-    setTasks(updated);playSound('accept');showToast('Resumed ▶','success');
+    const isFirstStart=(task.accumulatedMs||0)===0;
+    const updated=tasks.map(t=>t.id===task.id?{...t,pausedAt:null,acceptedAt:now,autoPausedAt:null}:t);
+    setTasks(updated);playSound('accept');
+    showToast(isFirstStart?'Timer started ⏱':'Resumed ▶','success');
+    await syncTask(updated.find(t=>t.id===task.id));
+  };
+
+  const handleDismissAutoPause=async id=>{
+    const updated=tasks.map(t=>t.id===id?{...t,autoPausedAt:null}:t);
+    setTasks(updated);
+    await syncTask(updated.find(t=>t.id===id));
   };
 
   const handleComplete=async task=>{
@@ -1587,20 +1668,28 @@ function App(){
     const updated=tasks.map(t=>t.id===task.id?{...t,completedAt:now,duration:total,pausedAt:null,points:pts}:t);
     setTasks(updated);setChaChing(true);playSound('complete');
     showToast(`Done! +${pts} pts · ${fmtDur(total)} 💰`,'success');
-    await syncTask(updated.find(t=>t.id===task.id));
+    const finished=updated.find(t=>t.id===task.id);
+    await syncTask(finished);
+    // Notify the creator if someone else completed their task
+    if(finished.createdByEmail&&config?.accessToken){
+      await sendCompletionEmail(config,finished,user?.name,user?.email);
+    }
   };
 
   const handleDelete=id=>{
     setDeletedIds(prev=>{const n=new Set(prev);n.add(id);return n;});
     setTasks(prev=>prev.filter(t=>t.id!==id));
+    setManualOrder(prev=>{const i=prev.indexOf(id);return i===-1?prev:prev.filter(x=>x!==id);});
     playSound('delete');
   };
   const handleClearTasks=()=>{setTasks([]);showToast('All tasks cleared','');};
   const handleClearCompleted=()=>{
     const completed=tasks.filter(t=>t.completedAt);
     if(!completed.length)return;
-    setDeletedIds(prev=>new Set([...prev,...completed.map(t=>t.id)]));
+    const ids=new Set(completed.map(t=>t.id));
+    setDeletedIds(prev=>new Set([...prev,...ids]));
     setTasks(prev=>prev.filter(t=>!t.completedAt));
+    setManualOrder(prev=>{const filtered=prev.filter(id=>!ids.has(id));return filtered.length===prev.length?prev:filtered;});
     showToast('Cleared completed tasks','success');
     playSound('delete');
   };
@@ -1681,11 +1770,15 @@ function App(){
       }else{
         if(!silent)showToast('Sheet appears empty — keeping local data','');
       }
-      // Pull shared app-config (hours, permissions) — skip portions mid-push to avoid clobbering
+      // Pull shared app-config (hours, permissions) — skip portions mid-push, no-op if unchanged
       try{
         const appCfg=await loadAppConfig(cfg);
-        if(!pushingHoursRef.current&&appCfg.hours&&typeof appCfg.hours==='object')setHours(appCfg.hours);
-        if(!pushingPermsRef.current&&appCfg.permissions&&typeof appCfg.permissions==='object')setPermissions(appCfg.permissions);
+        if(!pushingHoursRef.current&&appCfg.hours&&typeof appCfg.hours==='object'){
+          setHours(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.hours)?prev:appCfg.hours);
+        }
+        if(!pushingPermsRef.current&&appCfg.permissions&&typeof appCfg.permissions==='object'){
+          setPermissions(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.permissions)?prev:appCfg.permissions);
+        }
       }catch(e){/* ignore */}
     }catch{if(!silent)showToast('Refresh failed','error');}
     if(!silent)setRefreshing(false);
@@ -1707,6 +1800,38 @@ function App(){
     window.addEventListener('bvb-storage-full',onStorageFull);
     return()=>window.removeEventListener('bvb-storage-full',onStorageFull);
   },[]);
+
+  // Auto-pause timers running across the 8pm boundary (runs immediately + every minute)
+  useEffect(()=>{
+    if(!user)return;
+    const check=()=>{
+      const now=Date.now();
+      const updates=[];
+      for(const t of tasksRef.current){
+        const pauseTime=computeAutoPauseTime(t,now);
+        if(pauseTime!=null)updates.push({id:t.id,pauseTime});
+      }
+      if(!updates.length)return;
+      setTasks(prev=>prev.map(t=>{
+        const u=updates.find(x=>x.id===t.id);
+        if(!u)return t;
+        const elapsed=(t.accumulatedMs||0)+(u.pauseTime-t.acceptedAt);
+        return{...t,pausedAt:u.pauseTime,accumulatedMs:elapsed,autoPausedAt:u.pauseTime};
+      }));
+      if(configRef.current?.accessToken){
+        for(const u of updates){
+          const t=tasksRef.current.find(x=>x.id===u.id);
+          if(!t)continue;
+          const elapsed=(t.accumulatedMs||0)+(u.pauseTime-t.acceptedAt);
+          const updated={...t,pausedAt:u.pauseTime,accumulatedMs:elapsed,autoPausedAt:u.pauseTime};
+          syncTask(updated);
+        }
+      }
+    };
+    check();
+    const id=setInterval(check,60000);
+    return()=>clearInterval(id);
+  },[user]);
 
   // Auth-expired + visibility resume (only when signed in)
   useEffect(()=>{
@@ -1757,18 +1882,36 @@ function App(){
     const task=tasks.find(t=>t.id===id);if(!task)return;
     const now=Date.now();let updated=tasks;
     if(col==='open')updated=tasks.map(t=>t.id===id?{...t,acceptedAt:null,completedAt:null,pausedAt:null,accumulatedMs:0,points:null}:t);
-    else if(col==='inprog'&&!task.acceptedAt)updated=tasks.map(t=>t.id===id?{...t,acceptedAt:now,accumulatedMs:0,pausedAt:null,assignedTo:t.assignedTo||user?.name||'Unknown'}:t);
+    else if(col==='inprog'&&!task.acceptedAt)updated=tasks.map(t=>t.id===id?{...t,acceptedAt:now,accumulatedMs:0,pausedAt:now,autoPausedAt:null,assignedTo:t.assignedTo||user?.name||'Unknown'}:t);
     setTasks(updated);setDragOver(null);
   };
 
   // Filter tasks for Mine view
   const filterFn=t=>!filterMine||(t.assignedTo===user?.name||t.createdBy===user?.name);
 
-  const openTasks=sortTasks(tasks.filter(t=>!t.acceptedAt&&!t.completedAt&&filterFn(t)),sortBy);
-  const inProgTasks=sortTasks(tasks.filter(t=>t.acceptedAt&&!t.completedAt&&filterFn(t)),sortBy);
-  const doneTasks=sortTasks(tasks.filter(t=>t.completedAt&&filterFn(t)),sortBy==='date'?'date':sortBy);
+  const openTasks=sortTasks(tasks.filter(t=>!t.acceptedAt&&!t.completedAt&&filterFn(t)),sortBy,manualOrder);
+  const inProgTasks=sortTasks(tasks.filter(t=>t.acceptedAt&&!t.completedAt&&filterFn(t)),sortBy,manualOrder);
+  const doneTasks=sortTasks(tasks.filter(t=>t.completedAt&&filterFn(t)),sortBy==='date'?'date':sortBy,manualOrder);
 
-  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,fontSize:settings.fontSize||14,allCats:managedCats};
+  const moveTask=(task,direction)=>{
+    const sameCol=t=>task.completedAt?!!t.completedAt:(task.acceptedAt&&!task.completedAt)?(!!t.acceptedAt&&!t.completedAt):(!t.acceptedAt&&!t.completedAt);
+    const colTasks=sortTasks(tasks.filter(t=>sameCol(t)&&filterFn(t)),sortBy,manualOrder);
+    const idx=colTasks.findIndex(t=>t.id===task.id);
+    const swap=direction==='up'?idx-1:idx+1;
+    if(idx<0||swap<0||swap>=colTasks.length)return;
+    const order=[...manualOrder];
+    const aId=colTasks[idx].id, bId=colTasks[swap].id;
+    // If either task isn't yet in the order array, seed all visible column tasks in their current display order.
+    if(order.indexOf(aId)===-1||order.indexOf(bId)===-1){
+      colTasks.forEach(t=>{ if(order.indexOf(t.id)===-1)order.push(t.id); });
+    }
+    const aIdx=order.indexOf(aId), bIdx=order.indexOf(bId);
+    [order[aIdx],order[bIdx]]=[order[bIdx],order[aIdx]];
+    setManualOrder(order);
+    if(sortBy!=='manual')setSortByRaw('manual');
+  };
+
+  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),fontSize:settings.fontSize||14,allCats:managedCats};
 
   if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
   if(!user)return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
@@ -1805,6 +1948,20 @@ function App(){
         </div>
       </div>
 
+      {/* RESUME BANNER — any of my tasks auto-paused recently */}
+      {(()=>{
+        const mine=tasks.filter(t=>t.autoPausedAt&&!t.completedAt&&t.assignedTo===user?.name).sort((a,b)=>b.autoPausedAt-a.autoPausedAt);
+        if(!mine.length)return null;
+        const top=mine[0];const more=mine.length-1;
+        return(
+          <div className="resume-banner">
+            <div className="resume-banner-msg">▶ <b>{top.title}</b> auto-paused at {fmtShort(top.autoPausedAt)} — pick it back up?{more>0?` (+${more} more)`:''}</div>
+            <button className="primary" onClick={()=>handleResume(top)}>Resume</button>
+            <button onClick={()=>handleDismissAutoPause(top.id)}>Dismiss</button>
+          </div>
+        );
+      })()}
+
       {/* BOARD VIEW */}
       {view==='board'&&(
         <div className="body-layout">
@@ -1833,6 +1990,7 @@ function App(){
                 <option value="name">A–Z Name</option>
                 <option value="priority">Priority</option>
                 <option value="assignee">Assignee</option>
+                {sortBy==='manual'&&<option value="manual">↕ Custom</option>}
               </select>
               <button className="refresh-btn" onClick={()=>doRefresh(config)} disabled={refreshing}>
                 {refreshing?<div className="spinner" style={{width:'10px',height:'10px',borderWidth:'1.5px'}}/>:'↻'} Refresh
@@ -1910,7 +2068,7 @@ function App(){
 
       {/* MODALS / OVERLAYS */}
       {showNew&&<NewTaskModal currentUser={user} onClose={()=>setShowNew(false)} onSave={handleNewTask} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} canAssignOthers={userCanAssignOthers(permissions,user.email)}/>}
-      {editTask&&<NewTaskModal currentUser={user} onClose={()=>setEditTask(null)} onSave={handleEditSave} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} initialTask={editTask}/>}
+      {editTask&&<NewTaskModal currentUser={user} onClose={()=>setEditTask(null)} onSave={handleEditSave} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} initialTask={editTask} canAssignOthers={userCanAssignOthers(permissions,user.email)}/>}
       {commentTask&&<CommentDrawer task={commentTask} user={user} onClose={()=>setCommentTask(null)} onAddComment={handleAddComment}/>}
       {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
       {chaChing&&<ChaChing onDone={()=>setChaChing(false)}/>}
