@@ -133,9 +133,19 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .note.is-done .ntitle{text-decoration:line-through;}
 .nprio-badge{position:absolute;top:9px;right:11px;font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;}
 .nph{background:rgba(122,28,28,0.14);color:#7a1c1c;}.npm{background:rgba(160,100,0,0.14);color:#6e4600;}.npl{background:rgba(40,80,15,0.14);color:#285014;}
-.ncat{font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(20,10,10,0.45);margin-bottom:5px;font-family:'DM Mono',monospace;}
+.ncat{font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:rgba(20,10,10,0.72);margin-bottom:5px;font-family:'DM Mono',monospace;}
 .ntitle{font-size:14px;font-weight:700;color:#1a0e0e;line-height:1.3;margin-bottom:4px;padding-right:44px;}
-.ndesc{font-size:11.5px;color:rgba(20,10,10,0.6);line-height:1.45;margin-bottom:7px;white-space:pre-wrap;word-break:break-word;}
+.ndesc{font-size:11.5px;color:rgba(20,10,10,0.82);font-weight:500;line-height:1.45;margin-bottom:7px;white-space:pre-wrap;word-break:break-word;}
+.task-img{max-width:100%;max-height:160px;border-radius:5px;cursor:pointer;display:block;margin:6px 0;border:1px solid rgba(20,10,10,0.18);box-shadow:0 1px 4px rgba(0,0,0,0.18);transition:transform 0.12s;}
+.task-img:hover{transform:scale(1.02);}
+.task-link{color:#7a1c1c;text-decoration:underline;word-break:break-all;}
+.task-link:hover{color:#a83828;}
+.lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer;}
+.lightbox-img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,0.8);}
+.lightbox-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.lightbox-close:hover{background:rgba(0,0,0,0.85);}
+.lightbox-open{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:11px;font-family:'DM Mono',monospace;}
+.lightbox-open:hover{background:rgba(0,0,0,0.85);}
 .ndl{font-size:9px;font-family:'DM Mono',monospace;color:#7a1c1c;margin-bottom:6px;}
 .ndl.overdue{color:#cc0000;font-weight:700;}
 .ntimer{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#7a1c1c;margin-top:6px;font-weight:500;}
@@ -540,6 +550,34 @@ function fmtShort(ms){if(!ms)return'';return new Date(ms).toLocaleString('en-US'
 function isOverdue(dl){return dl&&new Date(dl+'T23:59:59')<new Date();}
 function taskPts(task){return({high:3,med:2,low:1}[task.priority]||1)+(task.duration&&task.duration<600000?1:0);}
 
+// ── INLINE IMAGE / LINK RENDERING ─────────────────────────────────────────
+// Detect URLs in user-typed text and render them — images as thumbnails, others as links.
+// Supports direct image URLs (jpg/png/gif/webp/svg) and Google Drive share links.
+function getImageUrl(url){
+  if(/\.(jpe?g|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url))return url;
+  const m=url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?[^"\s]*id=|thumbnail\?[^"\s]*id=)([a-zA-Z0-9_-]{10,})/);
+  if(m)return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  return null;
+}
+function renderText(text){
+  if(!text)return null;
+  const parts=text.split(/(https?:\/\/[^\s]+)/g);
+  return parts.map((part,i)=>{
+    if(!part)return null;
+    if(/^https?:\/\//.test(part)){
+      const trailing=part.match(/[.,!?;:)\]"'>]+$/);
+      let url=part,tail='';
+      if(trailing){tail=trailing[0];url=part.slice(0,-tail.length);}
+      const imgSrc=getImageUrl(url);
+      if(imgSrc){
+        return <React.Fragment key={i}><img src={imgSrc} alt="" className="task-img" loading="lazy" onClick={e=>{e.stopPropagation();window.dispatchEvent(new CustomEvent('bvb-lightbox',{detail:{src:imgSrc,url}}));}} onError={e=>{e.target.style.display='none';}}/>{tail}</React.Fragment>;
+      }
+      return <React.Fragment key={i}><a href={url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()} className="task-link">{url}</a>{tail}</React.Fragment>;
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
 // Auto-pause: timers only run between 8am and 8pm. If a timer was running across a past 8pm
 // boundary, we retroactively pause it at that boundary so phantom hours don't accumulate.
 function computeAutoPauseTime(task,nowMs){
@@ -792,7 +830,7 @@ function CommentDrawer({task, user, onClose, onAddComment}){
                 <span className="comment-author">{c.authorName}</span>
                 <span className="comment-time">{fmtShort(c.createdAt)}</span>
               </div>
-              <div className="comment-text">{c.text}</div>
+              <div className="comment-text">{renderText(c.text)}</div>
             </div>
           ))}
         </div>
@@ -998,7 +1036,7 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
       <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</div>
       <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
       <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
-      {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{task.desc}</div>}
+      {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{renderText(task.desc)}</div>}
       {task.deadline&&<div className={`ndl${overdue?' overdue':''}`} style={{fontSize:(fs*0.64)+'px'}}>{overdue?'⚠ Overdue: ':'📅 '}{task.deadline}</div>}
       {isActive&&<div className="ntimer" style={{fontSize:(fs*0.71)+'px'}}><div className="npulse"/>{elapsed}</div>}
       {isPaused&&(task.accumulatedMs||0)>0&&<div className="npaused" style={{fontSize:(fs*0.71)+'px'}}>{task.autoPausedAt?'⏸ Auto-paused · ':'⏸ Paused · '}{elapsed}</div>}
@@ -1055,7 +1093,7 @@ function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,o
       {open&&(
         <div className="list-row-detail">
           {(isActive||isPaused)&&<div className="lrd-timer">{isActive?<><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block',animation:'pp 1.2s infinite'}}/>Running: {elapsed}</>:(task.accumulatedMs||0)===0?<>⏱ Ready — press ▶ Start</>:<>{task.autoPausedAt?'⏸ Auto-paused: ':'⏸ Paused: '}{elapsed}</>}</div>}
-          {task.desc&&<div className="lrd-desc">{task.desc}</div>}
+          {task.desc&&<div className="lrd-desc">{renderText(task.desc)}</div>}
           <div className="lrd-meta">
             <span className="lrd-tag">{(allCats||CATS).find(c=>c.id===task.category)?.label||task.category}</span>
             {task.client&&task.client!=='General / Internal'&&<span className="lrd-tag">{task.client}{task.project?` › ${task.project}`:''}</span>}
@@ -1538,6 +1576,14 @@ function App(){
   const pushingPermsRef=useRef(false);
   const tasksRef=useRef(tasks);
   useEffect(()=>{tasksRef.current=tasks;},[tasks]);
+  const [lightbox,setLightbox]=useState(null);
+  useEffect(()=>{
+    const h=e=>setLightbox(e.detail);
+    window.addEventListener('bvb-lightbox',h);
+    const esc=e=>{if(e.key==='Escape')setLightbox(null);};
+    window.addEventListener('keydown',esc);
+    return()=>{window.removeEventListener('bvb-lightbox',h);window.removeEventListener('keydown',esc);};
+  },[]);
   useEffect(()=>{configRef.current=config;},[config]);
   useEffect(()=>{deletedIdsRef.current=deletedIds;},[deletedIds]);
 
@@ -2075,6 +2121,13 @@ function App(){
       {showNew&&<NewTaskModal currentUser={user} onClose={()=>setShowNew(false)} onSave={handleNewTask} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} canAssignOthers={userCanAssignOthers(permissions,user.email)}/>}
       {editTask&&<NewTaskModal currentUser={user} onClose={()=>setEditTask(null)} onSave={handleEditSave} managedClients={managedClients} managedCats={managedCats} projects={projects} onSaveClients={handleSaveClients} onSaveCats={handleSaveCats} onSaveProjects={handleSaveProjects} allTeam={allTeam} initialTask={editTask} canAssignOthers={userCanAssignOthers(permissions,user.email)}/>}
       {commentTask&&<CommentDrawer task={commentTask} user={user} onClose={()=>setCommentTask(null)} onAddComment={handleAddComment}/>}
+      {lightbox&&(
+        <div className="lightbox-overlay" onClick={()=>setLightbox(null)}>
+          <img src={lightbox.src} alt="" className="lightbox-img" onClick={e=>e.stopPropagation()}/>
+          <button className="lightbox-close" onClick={()=>setLightbox(null)}>✕</button>
+          <a href={lightbox.url} target="_blank" rel="noopener noreferrer" className="lightbox-open" onClick={e=>e.stopPropagation()}>Open original ↗</a>
+        </div>
+      )}
       {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
       {chaChing&&<ChaChing onDone={()=>setChaChing(false)}/>}
     </div>
