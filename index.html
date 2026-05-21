@@ -1851,15 +1851,12 @@ function App(){
   };
 
   const handleToggleChecklist=async(taskId,itemId)=>{
-    let toSync=null;
-    setTasks(prev=>prev.map(t=>{
-      if(t.id!==taskId)return t;
-      const checklist=(t.checklist||[]).map(it=>it.id===itemId?{...it,done:!it.done}:it);
-      const next={...t,checklist};
-      toSync=next;
-      return next;
-    }));
-    if(toSync)await syncTask(toSync);
+    const t=tasksRef.current.find(x=>x.id===taskId);
+    if(!t)return;
+    const checklist=(t.checklist||[]).map(it=>it.id===itemId?{...it,done:!it.done}:it);
+    const updated={...t,checklist};
+    setTasks(prev=>prev.map(x=>x.id===taskId?updated:x));
+    await syncTask(updated);
   };
 
   const handleDismissAutoPause=async id=>{
