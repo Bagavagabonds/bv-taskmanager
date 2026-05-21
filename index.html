@@ -139,6 +139,44 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .task-img:hover{transform:scale(1.02);}
 .task-link{color:#7a1c1c;text-decoration:underline;word-break:break-all;}
 .task-link:hover{color:#a83828;}
+
+/* ── CHECKLIST — board card (light bg) ── */
+.cl-card{margin-top:7px;padding-top:6px;border-top:1px solid rgba(20,10,10,0.13);display:flex;flex-direction:column;gap:1px;}
+.cl-card-item{display:flex;align-items:center;gap:7px;padding:3px 5px;color:rgba(20,10,10,0.82);cursor:pointer;border-radius:4px;line-height:1.3;}
+.cl-card-item:hover{background:rgba(20,10,10,0.07);}
+.cl-card-item.done .cl-card-label{text-decoration:line-through;color:rgba(20,10,10,0.45);}
+.cl-card-check{width:13px;font-weight:800;color:rgba(20,10,10,0.45);font-family:'DM Mono',monospace;flex-shrink:0;text-align:center;}
+.cl-card-item.done .cl-card-check{color:#3d6f3d;}
+.cl-card-label{flex:1;word-break:break-word;}
+.cl-card-progress{display:flex;align-items:center;gap:7px;margin-top:5px;padding:0 5px;}
+.cl-card-track{flex:1;height:4px;background:rgba(20,10,10,0.13);border-radius:2px;overflow:hidden;}
+.cl-card-fill{height:100%;background:rgba(20,10,10,0.55);border-radius:2px;transition:width 0.2s ease;}
+.cl-card-text{font-family:'DM Mono',monospace;color:rgba(20,10,10,0.6);font-weight:700;flex-shrink:0;}
+
+/* ── CHECKLIST — list row detail (dark bg) ── */
+.cl-list{margin:8px 0 10px;display:flex;flex-direction:column;gap:1px;}
+.cl-list-item{display:flex;align-items:center;gap:8px;padding:5px 7px;font-size:12px;color:var(--text);cursor:pointer;border-radius:4px;line-height:1.3;}
+.cl-list-item:hover{background:var(--bg3);}
+.cl-list-item.done .cl-list-label{text-decoration:line-through;color:var(--text3);}
+.cl-list-check{width:14px;font-weight:800;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0;text-align:center;}
+.cl-list-item.done .cl-list-check{color:var(--amber);}
+.cl-list-label{flex:1;word-break:break-word;}
+.cl-list-progress{display:flex;align-items:center;gap:8px;margin-top:6px;padding:0 7px;}
+.cl-list-track{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.cl-list-fill{height:100%;background:var(--amber);transition:width 0.2s ease;}
+.cl-list-text{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);font-weight:700;flex-shrink:0;}
+
+/* ── CHECKLIST — editor in modal (dark bg) ── */
+.cl-editor{display:flex;flex-direction:column;gap:6px;}
+.cl-edit-row{display:flex;align-items:center;gap:8px;}
+.cl-edit-row .cl-bullet{color:var(--text3);font-family:'DM Mono',monospace;font-weight:800;width:14px;text-align:center;flex-shrink:0;}
+.cl-edit-row input{flex:1;}
+.cl-remove{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:5px 7px;border-radius:3px;flex-shrink:0;}
+.cl-remove:hover{color:#f08080;background:rgba(240,128,128,0.1);}
+.cl-add-row{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.cl-add-row input{flex:1;}
+.cl-add-btn{font-size:11px;padding:8px 14px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;flex-shrink:0;white-space:nowrap;}
+.cl-add-btn:hover{background:var(--bg4);color:var(--text);}
 .lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer;}
 .lightbox-img{max-width:100%;max-height:100%;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,0.8);}
 .lightbox-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:18px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
@@ -861,7 +899,9 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
     priority:initialTask.priority||'med',deadline:initialTask.deadline||'',
     assignedToEmail:initialTask.assignedToEmail||'',client:initialTask.client||'General / Internal',
     project:initialTask.project||'',noteColor:initialTask.noteColor||'',
-  }:{title:'',desc:'',category:'other',priority:'med',deadline:'',assignedToEmail:lockedEmail||'',client:'General / Internal',project:'',noteColor:''});
+    checklist:Array.isArray(initialTask.checklist)?initialTask.checklist.map(it=>({...it})):[],
+  }:{title:'',desc:'',category:'other',priority:'med',deadline:'',assignedToEmail:lockedEmail||'',client:'General / Internal',project:'',noteColor:'',checklist:[]});
+  const [newChecklistItem,setNewChecklistItem]=useState('');
   const [editMode,setEditMode]=useState(null); // null | 'clients' | 'cats' | 'projects'
   const colorInputRef=useRef(null);
   const hasEyeDropper=typeof EyeDropper!=='undefined';
@@ -873,13 +913,23 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
 
   const clientProjects=projects[form.client]||[];
 
+  const addChecklistItem=()=>{
+    const label=newChecklistItem.trim();if(!label)return;
+    const it={id:'cl_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),label,done:false};
+    set('checklist',[...(form.checklist||[]),it]);
+    setNewChecklistItem('');
+  };
+  const removeChecklistItem=idx=>set('checklist',(form.checklist||[]).filter((_,i)=>i!==idx));
+  const updateChecklistItem=(idx,label)=>set('checklist',(form.checklist||[]).map((it,i)=>i===idx?{...it,label}:it));
+
   const save=()=>{
     if(!form.title.trim())return;
     const assignedTo=member?.name||(form.assignedToEmail?form.assignedToEmail.split('@')[0]:'');
+    const cleanChecklist=(form.checklist||[]).filter(it=>it.label&&it.label.trim()).map(it=>({...it,label:it.label.trim()}));
     if(isEdit){
-      onSave({...initialTask,...form,title:form.title.trim(),desc:form.desc.trim(),assignedTo});
+      onSave({...initialTask,...form,checklist:cleanChecklist,title:form.title.trim(),desc:form.desc.trim(),assignedTo});
     }else{
-      onSave({id:'task_'+Date.now(),...form,title:form.title.trim(),desc:form.desc.trim(),assignedTo,
+      onSave({id:'task_'+Date.now(),...form,checklist:cleanChecklist,title:form.title.trim(),desc:form.desc.trim(),assignedTo,
         createdBy:currentUser.name,createdByEmail:currentUser.email,createdAt:Date.now(),
         acceptedAt:null,completedAt:null,duration:null,pausedAt:null,accumulatedMs:0,points:null,comments:[]});
     }
@@ -924,6 +974,24 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
         <div className="modal-title">{isEdit?<>Edit <span>task</span></>:<>Post a <span>task</span></>}</div>
         <div className="field"><label>Title *</label><input value={form.title} onChange={e=>set('title',e.target.value)} placeholder="Build production kit for event" autoFocus/></div>
         <div className="field"><label>Details / instructions</label><textarea value={form.desc} onChange={e=>set('desc',e.target.value)} placeholder="Notes for the crew..."/></div>
+
+        {/* CHECKLIST */}
+        <div className="field">
+          <label>Checklist <span style={{fontWeight:400,color:'var(--text3)'}}>(optional — steps to check off as crew completes them)</span></label>
+          <div className="cl-editor">
+            {(form.checklist||[]).map((it,i)=>(
+              <div key={it.id||i} className="cl-edit-row">
+                <span className="cl-bullet">○</span>
+                <input value={it.label} onChange={e=>updateChecklistItem(i,e.target.value)} placeholder="Step..."/>
+                <button type="button" className="cl-remove" onClick={()=>removeChecklistItem(i)} title="Remove">✕</button>
+              </div>
+            ))}
+            <div className="cl-add-row">
+              <input value={newChecklistItem} onChange={e=>setNewChecklistItem(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();addChecklistItem();}}} placeholder="Add a step and press Enter..."/>
+              <button type="button" className="cl-add-btn" onClick={addChecklistItem}>+ Add</button>
+            </div>
+          </div>
+        </div>
 
         {/* NOTE COLOR + PRIORITY */}
         <div className="field">
@@ -1023,7 +1091,7 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
 }
 
 // ── TASK CARD ──────────────────────────────────────────────────────────────
-function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,fontSize,allCats}){
+function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,fontSize,allCats}){
   const {col,hex,rot}=noteStyle(task.id,task.priority,task.noteColor);
   const prioClass=hex?'':(task.priority==='high'?' prio-high':task.priority==='low'?' prio-low':'');
   const isDone=!!task.completedAt;
@@ -1044,6 +1112,25 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
       <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
       <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
       {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{renderText(task.desc)}</div>}
+      {Array.isArray(task.checklist)&&task.checklist.length>0&&(()=>{
+        const total=task.checklist.length;
+        const done=task.checklist.filter(it=>it.done).length;
+        const pct=Math.round((done/total)*100);
+        return(
+          <div className="cl-card">
+            {task.checklist.map(it=>(
+              <div key={it.id} className={`cl-card-item${it.done?' done':''}`} onClick={e=>{e.stopPropagation();onToggleChecklist&&onToggleChecklist(task.id,it.id);}} style={{fontSize:(fs*0.78)+'px'}}>
+                <span className="cl-card-check">{it.done?'✓':'○'}</span>
+                <span className="cl-card-label">{it.label}</span>
+              </div>
+            ))}
+            <div className="cl-card-progress">
+              <div className="cl-card-track"><div className="cl-card-fill" style={{width:pct+'%'}}/></div>
+              <span className="cl-card-text" style={{fontSize:(fs*0.64)+'px'}}>{done}/{total} · {pct}%</span>
+            </div>
+          </div>
+        );
+      })()}
       {task.deadline&&<div className={`ndl${overdue?' overdue':''}`} style={{fontSize:(fs*0.64)+'px'}}>{overdue?'⚠ Overdue: ':'📅 '}{task.deadline}</div>}
       {isActive&&<div className="ntimer" style={{fontSize:(fs*0.71)+'px'}}><div className="npulse"/>{elapsed}</div>}
       {isPaused&&(task.accumulatedMs||0)>0&&<div className="npaused" style={{fontSize:(fs*0.71)+'px'}}>{task.autoPausedAt?'⏸ Auto-paused · ':'⏸ Paused · '}{elapsed}</div>}
@@ -1067,7 +1154,7 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
 }
 
 // ── LIST ROW ───────────────────────────────────────────────────────────────
-function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,allCats}){
+function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,allCats}){
   const [open,setOpen]=useState(false);
   const isDone=!!task.completedAt;
   const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
@@ -1101,6 +1188,25 @@ function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,o
         <div className="list-row-detail">
           {(isActive||isPaused)&&<div className="lrd-timer">{isActive?<><span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block',animation:'pp 1.2s infinite'}}/>Running: {elapsed}</>:(task.accumulatedMs||0)===0?<>⏱ Ready — press ▶ Start</>:<>{task.autoPausedAt?'⏸ Auto-paused: ':'⏸ Paused: '}{elapsed}</>}</div>}
           {task.desc&&<div className="lrd-desc">{renderText(task.desc)}</div>}
+          {Array.isArray(task.checklist)&&task.checklist.length>0&&(()=>{
+            const total=task.checklist.length;
+            const done=task.checklist.filter(it=>it.done).length;
+            const pct=Math.round((done/total)*100);
+            return(
+              <div className="cl-list">
+                {task.checklist.map(it=>(
+                  <div key={it.id} className={`cl-list-item${it.done?' done':''}`} onClick={()=>onToggleChecklist&&onToggleChecklist(task.id,it.id)}>
+                    <span className="cl-list-check">{it.done?'✓':'○'}</span>
+                    <span className="cl-list-label">{it.label}</span>
+                  </div>
+                ))}
+                <div className="cl-list-progress">
+                  <div className="cl-list-track"><div className="cl-list-fill" style={{width:pct+'%'}}/></div>
+                  <span className="cl-list-text">{done}/{total} · {pct}%</span>
+                </div>
+              </div>
+            );
+          })()}
           <div className="lrd-meta">
             <span className="lrd-tag">{(allCats||CATS).find(c=>c.id===task.category)?.label||task.category}</span>
             {task.client&&task.client!=='General / Internal'&&<span className="lrd-tag">{task.client}{task.project?` › ${task.project}`:''}</span>}
@@ -1744,6 +1850,18 @@ function App(){
     await syncTask(updated.find(t=>t.id===task.id));
   };
 
+  const handleToggleChecklist=async(taskId,itemId)=>{
+    let toSync=null;
+    setTasks(prev=>prev.map(t=>{
+      if(t.id!==taskId)return t;
+      const checklist=(t.checklist||[]).map(it=>it.id===itemId?{...it,done:!it.done}:it);
+      const next={...t,checklist};
+      toSync=next;
+      return next;
+    }));
+    if(toSync)await syncTask(toSync);
+  };
+
   const handleDismissAutoPause=async id=>{
     const updated=tasks.map(t=>t.id===id?{...t,autoPausedAt:null}:t);
     setTasks(updated);
@@ -2041,7 +2159,7 @@ function App(){
     if(sortBy!=='manual')setSortByRaw('manual');
   };
 
-  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),fontSize:settings.fontSize||14,allCats:managedCats};
+  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),onToggleChecklist:handleToggleChecklist,fontSize:settings.fontSize||14,allCats:managedCats};
 
   if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
   if(!user)return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
