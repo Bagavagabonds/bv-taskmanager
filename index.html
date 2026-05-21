@@ -611,6 +611,9 @@ function sortTasks(arr,sortBy,manualOrder){
   if(sortBy==='name')return a.sort((x,y)=>x.title.localeCompare(y.title));
   if(sortBy==='priority'){const p={high:0,med:1,low:2};return a.sort((x,y)=>(p[x.priority]||1)-(p[y.priority]||1));}
   if(sortBy==='assignee')return a.sort((x,y)=>(x.assignedTo||'').localeCompare(y.assignedTo||''));
+  if(sortBy==='category')return a.sort((x,y)=>(x.category||'').localeCompare(y.category||''));
+  if(sortBy==='client')return a.sort((x,y)=>(x.client||'').localeCompare(y.client||''));
+  if(sortBy==='project')return a.sort((x,y)=>(x.project||'').localeCompare(y.project||''));
   return a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0));
 }
 
@@ -1574,8 +1577,13 @@ function App(){
   const deletedIdsRef=useRef(deletedIds);
   const pushingHoursRef=useRef(false);
   const pushingPermsRef=useRef(false);
+  const pushingClientsRef=useRef(false);
+  const pushingCatsRef=useRef(false);
+  const pushingProjectsRef=useRef(false);
   const tasksRef=useRef(tasks);
   useEffect(()=>{tasksRef.current=tasks;},[tasks]);
+  const userRef=useRef(user);
+  useEffect(()=>{userRef.current=user;},[user]);
   const [lightbox,setLightbox]=useState(null);
   useEffect(()=>{
     const h=e=>setLightbox(e.detail);
@@ -1632,10 +1640,22 @@ function App(){
         client_id:config.clientId,
         scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send email profile',
         callback:async resp=>{
+          // Silent re-auth failure: Google session expired or revoked.
+          if(resp.error){
+            if(configRef.current?.accessToken){
+              showToast('Please sign in again','error');
+              setUser(null);
+              setConfig(p=>({...p,accessToken:null,tokenExpiry:null}));
+              try{localStorage.removeItem(CONFIG_KEY);}catch(e){}
+            }
+            return;
+          }
           if(resp.access_token){
             const expiry=Date.now()+((resp.expires_in||3600)*1000);
             const c={...HARDCODED_CONFIG,accessToken:resp.access_token,tokenExpiry:expiry};
             setConfig(c);safeStore(CONFIG_KEY,c);
+            // Silent re-auth path: user is already signed in, just refresh the token quietly.
+            if(configRef.current?.accessToken&&userRef.current)return;
             const pr=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${resp.access_token}`}});
             const p=await pr.json();
             const member=TEAM.find(t=>t.email===p.email);
@@ -1755,9 +1775,31 @@ function App(){
     setEditTask(null);
     await syncTask(updated);
   };
-  const handleSaveClients=list=>setManagedClients(list);
-  const handleSaveCats=list=>setManagedCats(list);
-  const handleSaveProjects=(client,list)=>setProjects(prev=>({...prev,[client]:list}));
+  const handleSaveClients=async list=>{
+    setManagedClients(list);
+    if(!configRef.current?.accessToken)return;
+    pushingClientsRef.current=true;
+    try{ await saveAppConfigKey(configRef.current,'clients',list); }
+    catch(e){ showToast('Clients saved locally — sheet sync failed','error'); }
+    finally{ setTimeout(()=>{pushingClientsRef.current=false;},1500); }
+  };
+  const handleSaveCats=async list=>{
+    setManagedCats(list);
+    if(!configRef.current?.accessToken)return;
+    pushingCatsRef.current=true;
+    try{ await saveAppConfigKey(configRef.current,'cats',list); }
+    catch(e){ showToast('Categories saved locally — sheet sync failed','error'); }
+    finally{ setTimeout(()=>{pushingCatsRef.current=false;},1500); }
+  };
+  const handleSaveProjects=async(client,list)=>{
+    const next={...projects,[client]:list};
+    setProjects(next);
+    if(!configRef.current?.accessToken)return;
+    pushingProjectsRef.current=true;
+    try{ await saveAppConfigKey(configRef.current,'projects',next); }
+    catch(e){ showToast('Projects saved locally — sheet sync failed','error'); }
+    finally{ setTimeout(()=>{pushingProjectsRef.current=false;},1500); }
+  };
   const handleAddUser=(name,email)=>{if(!allTeam.find(t=>t.email===email))setCustomTeam(prev=>[...prev,{name,email}]);};
 
   const handlePermissionsChange=async(newPerms)=>{
@@ -1830,6 +1872,15 @@ function App(){
         if(!pushingPermsRef.current&&appCfg.permissions&&typeof appCfg.permissions==='object'){
           setPermissions(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.permissions)?prev:appCfg.permissions);
         }
+        if(!pushingClientsRef.current&&Array.isArray(appCfg.clients)){
+          setManagedClients(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.clients)?prev:appCfg.clients);
+        }
+        if(!pushingCatsRef.current&&Array.isArray(appCfg.cats)){
+          setManagedCats(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.cats)?prev:appCfg.cats);
+        }
+        if(!pushingProjectsRef.current&&appCfg.projects&&typeof appCfg.projects==='object'){
+          setProjects(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.projects)?prev:appCfg.projects);
+        }
       }catch(e){/* ignore */}
     }catch{if(!silent)showToast('Refresh failed','error');}
     if(!silent)setRefreshing(false);
@@ -1888,7 +1939,16 @@ function App(){
   useEffect(()=>{
     if(!config?.accessToken)return;
     let handled=false;
-    const onAuthExpired=()=>{if(handled)return;handled=true;showToast('Session expired — please sign in again','error');handleSignOut();};
+    const onAuthExpired=()=>{
+      if(handled)return;handled=true;
+      // Try silent re-auth first — uses the user's existing Google session, no UI prompt.
+      if(tokenRef.current){
+        try{ tokenRef.current.requestAccessToken({prompt:'none'}); return; }
+        catch(e){/* fall through to manual sign-in */}
+      }
+      showToast('Session expired — please sign in again','error');
+      handleSignOut();
+    };
     const onVisible=()=>{if(document.visibilityState==='visible')doRefresh(configRef.current,true);};
     window.addEventListener('bvb-auth-expired',onAuthExpired);
     document.addEventListener('visibilitychange',onVisible);
@@ -2041,6 +2101,9 @@ function App(){
                 <option value="name">A–Z Name</option>
                 <option value="priority">Priority</option>
                 <option value="assignee">Assignee</option>
+                <option value="category">Category</option>
+                <option value="client">Client</option>
+                <option value="project">Project</option>
                 {sortBy==='manual'&&<option value="manual">↕ Custom</option>}
               </select>
               <button className="refresh-btn" onClick={()=>doRefresh(config)} disabled={refreshing}>
