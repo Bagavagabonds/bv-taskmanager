@@ -123,12 +123,11 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .col-empty{border:1px dashed var(--border2);border-radius:8px;padding:24px 14px;text-align:center;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
 
 /* ── TASK CARD ── */
-.note{border-radius:3px;padding:13px 14px 11px;position:relative;cursor:grab;box-shadow:1px 2px 9px rgba(0,0,0,0.42),0 1px 3px rgba(0,0,0,0.28);transition:box-shadow 0.15s,transform 0.15s;}
-.note:hover{box-shadow:3px 6px 20px rgba(0,0,0,0.52),0 2px 6px rgba(0,0,0,0.32);transform:scale(1.016) rotate(0deg) !important;}
+.note{border-radius:8px;padding:13px 14px 11px;position:relative;cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,0.22),0 2px 8px rgba(0,0,0,0.16);transition:box-shadow 0.18s ease,transform 0.18s ease;}
+.note:hover{box-shadow:0 4px 14px rgba(0,0,0,0.30),0 2px 5px rgba(0,0,0,0.20);transform:translateY(-3px) scale(1.012);}
 .note:active{cursor:grabbing;}
-.note::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:rgba(10,5,5,0.5);border:1.5px solid rgba(10,5,5,0.22);box-shadow:0 1px 4px rgba(0,0,0,0.5);}
 .n-y{background:#f2e49a;}.n-o{background:#f5cc90;}.n-g{background:#c2e098;}.n-b{background:#a2cff0;}.n-pk{background:#f0b0c8;}.n-pu{background:#cab8f2;}
-.r1{transform:rotate(-1.1deg);}.r2{transform:rotate(0.7deg);}.r3{transform:rotate(-0.4deg);}.r4{transform:rotate(1.2deg);}
+.r1,.r2,.r3,.r4{transform:none;}
 .note.is-done{opacity:0.45;}
 .note.is-done .ntitle{text-decoration:line-through;}
 .nprio-badge{position:absolute;top:9px;right:11px;font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;}
@@ -169,6 +168,11 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .resume-banner button{font-size:10px;padding:6px 11px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
 .resume-banner button.primary{background:var(--amber);color:#1a0e0e;border-color:var(--amber);}
 .resume-banner button:hover{opacity:0.88;}
+.reconnect-banner{display:flex;align-items:center;gap:10px;padding:9px 16px;background:rgba(168,56,40,0.18);border-bottom:1px solid rgba(168,56,40,0.45);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;flex-wrap:wrap;}
+.reconnect-banner-msg{flex:1;min-width:200px;}
+.reconnect-banner button{font-size:10px;padding:6px 11px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
+.reconnect-banner button.primary{background:var(--crimson);color:#f5c5a3;border-color:var(--crimson);}
+.reconnect-banner button:hover{opacity:0.88;}
 .by-line{font-size:9px;color:rgba(20,10,10,0.38);font-family:'DM Mono',monospace;margin-top:7px;}
 .pts-badge{display:inline-flex;align-items:center;font-size:9px;font-family:'DM Mono',monospace;background:rgba(20,10,10,0.08);border-radius:3px;padding:2px 6px;color:rgba(20,10,10,0.5);margin-top:4px;}
 
@@ -383,8 +387,8 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .refresh-btn:disabled{opacity:0.5;cursor:default;}
 
 /* ── PRIORITY INTENSITY FILTERS ── */
-.note.prio-high{filter:saturate(2.0) brightness(0.84);}
-.note.prio-low{filter:saturate(0.38) brightness(1.20);}
+.note.prio-high{filter:saturate(1.4) brightness(0.92);}
+.note.prio-low{filter:saturate(0.6) brightness(1.1);}
 
 /* ── COLOR PICKER ── */
 .color-picker-row{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0;}
@@ -1585,6 +1589,7 @@ function App(){
   const userRef=useRef(user);
   useEffect(()=>{userRef.current=user;},[user]);
   const [lightbox,setLightbox]=useState(null);
+  const [reconnectNeeded,setReconnectNeeded]=useState(false);
   useEffect(()=>{
     const h=e=>setLightbox(e.detail);
     window.addEventListener('bvb-lightbox',h);
@@ -1640,20 +1645,17 @@ function App(){
         client_id:config.clientId,
         scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send email profile',
         callback:async resp=>{
-          // Silent re-auth failure: Google session expired or revoked.
+          // Silent re-auth failure: Google session expired, revoked, or third-party cookies blocked.
+          // Don't kick the user out — show a non-disruptive reconnect banner. They can keep reading.
           if(resp.error){
-            if(configRef.current?.accessToken){
-              showToast('Please sign in again','error');
-              setUser(null);
-              setConfig(p=>({...p,accessToken:null,tokenExpiry:null}));
-              try{localStorage.removeItem(CONFIG_KEY);}catch(e){}
-            }
+            if(userRef.current)setReconnectNeeded(true);
             return;
           }
           if(resp.access_token){
             const expiry=Date.now()+((resp.expires_in||3600)*1000);
             const c={...HARDCODED_CONFIG,accessToken:resp.access_token,tokenExpiry:expiry};
             setConfig(c);safeStore(CONFIG_KEY,c);
+            setReconnectNeeded(false);
             // Silent re-auth path: user is already signed in, just refresh the token quietly.
             if(configRef.current?.accessToken&&userRef.current)return;
             const pr=await fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:`Bearer ${resp.access_token}`}});
@@ -1678,6 +1680,23 @@ function App(){
   },[config?.clientId]);
 
   const handleSignIn=()=>tokenRef.current?tokenRef.current.requestAccessToken():showToast('Google API loading — try again','error');
+  const handleReconnect=()=>{
+    if(!tokenRef.current){showToast('Google API still loading — try again','error');return;}
+    // Default behavior — uses existing Google session if possible, only prompts if needed.
+    try{ tokenRef.current.requestAccessToken(); }
+    catch(e){showToast('Reconnect failed — please refresh the page','error');}
+  };
+
+  // Proactive token refresh — silently refresh ~5 min before expiry so 401s rarely happen at all.
+  useEffect(()=>{
+    if(!config?.accessToken||!config?.tokenExpiry||!tokenRef.current)return;
+    const leadMs=5*60*1000;
+    const delay=Math.max(0,config.tokenExpiry-Date.now()-leadMs);
+    const t=setTimeout(()=>{
+      try{ tokenRef.current?.requestAccessToken({prompt:'none'}); }catch(e){/* reactive path will handle */}
+    },delay);
+    return()=>clearTimeout(t);
+  },[config?.tokenExpiry]);
   const showToast=(msg,type='')=>setToast({msg,type});
 
   const syncTask=async(task,isNew=false)=>{
@@ -1944,10 +1963,10 @@ function App(){
       // Try silent re-auth first — uses the user's existing Google session, no UI prompt.
       if(tokenRef.current){
         try{ tokenRef.current.requestAccessToken({prompt:'none'}); return; }
-        catch(e){/* fall through to manual sign-in */}
+        catch(e){/* fall through to reconnect banner */}
       }
-      showToast('Session expired — please sign in again','error');
-      handleSignOut();
+      // Don't kick to sign-in screen — show a banner; user can keep reading cached data.
+      if(userRef.current)setReconnectNeeded(true);
     };
     const onVisible=()=>{if(document.visibilityState==='visible')doRefresh(configRef.current,true);};
     window.addEventListener('bvb-auth-expired',onAuthExpired);
@@ -2058,6 +2077,15 @@ function App(){
           </div>
         </div>
       </div>
+
+      {/* RECONNECT BANNER — silent re-auth failed; user can keep reading, click to retry */}
+      {reconnectNeeded&&(
+        <div className="reconnect-banner">
+          <div className="reconnect-banner-msg">⚠ Connection to Google lost. Your changes won't sync until you reconnect.</div>
+          <button className="primary" onClick={handleReconnect}>Reconnect</button>
+          <button onClick={()=>setReconnectNeeded(false)}>Dismiss</button>
+        </div>
+      )}
 
       {/* RESUME BANNER — any of my tasks auto-paused recently */}
       {(()=>{
