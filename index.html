@@ -115,7 +115,11 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .board{padding:10px 16px 80px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;background-image:var(--board-bg);background-size:var(--board-size);min-height:100%;}
 .col-wrap{min-height:80px;border-radius:8px;transition:background 0.15s;padding:3px;}
 .col-wrap.drag-over{background:var(--amber-dim);}
-.col-head{display:flex;align-items:center;gap:6px;padding-bottom:10px;margin-bottom:5px;border-bottom:1px solid var(--border);}
+.col-head{display:flex;align-items:center;gap:6px;padding-bottom:10px;margin-bottom:5px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+.col-head:hover .clabel{color:var(--text);}
+.col-collapse{margin-left:auto;font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;transition:transform 0.18s ease;flex-shrink:0;}
+.col-collapse.open{transform:rotate(0deg);}
+.col-collapse.closed{transform:rotate(-90deg);}
 .cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .clabel{font-size:9px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--text2);}
 .ccount{margin-left:auto;font-size:9px;font-family:'DM Mono',monospace;background:rgba(255,255,255,0.05);border-radius:10px;padding:1px 7px;color:var(--text3);}
@@ -123,35 +127,36 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .col-empty{border:1px dashed var(--border2);border-radius:8px;padding:24px 14px;text-align:center;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
 
 /* ── TASK CARD ── */
-.note{border-radius:8px;padding:13px 14px 11px;position:relative;cursor:grab;box-shadow:0 1px 3px rgba(0,0,0,0.22),0 2px 8px rgba(0,0,0,0.16);transition:box-shadow 0.18s ease,transform 0.18s ease;}
-.note:hover{box-shadow:0 4px 14px rgba(0,0,0,0.30),0 2px 5px rgba(0,0,0,0.20);transform:translateY(-3px) scale(1.012);}
+.note{--note-accent:var(--border2);background:var(--bg2);color:var(--text);border-radius:8px;padding:13px 14px 11px;position:relative;cursor:grab;border:1.5px solid var(--note-accent);box-shadow:0 1px 3px rgba(0,0,0,0.32),0 2px 8px rgba(0,0,0,0.20);transition:box-shadow 0.18s ease,transform 0.18s ease,border-color 0.15s ease;}
+.note:hover{box-shadow:0 4px 14px rgba(0,0,0,0.45),0 2px 5px rgba(0,0,0,0.28);transform:translateY(-3px) scale(1.012);}
 .note:active{cursor:grabbing;}
-.n-y{background:#f2e49a;}.n-o{background:#f5cc90;}.n-g{background:#c2e098;}.n-b{background:#a2cff0;}.n-pk{background:#f0b0c8;}.n-pu{background:#cab8f2;}
+.n-y{--note-accent:#f2e49a;}.n-o{--note-accent:#f5cc90;}.n-g{--note-accent:#c2e098;}.n-b{--note-accent:#a2cff0;}.n-pk{--note-accent:#f0b0c8;}.n-pu{--note-accent:#cab8f2;}
 .r1,.r2,.r3,.r4{transform:none;}
-.note.is-done{opacity:0.45;}
+.note.is-done{opacity:0.55;}
 .note.is-done .ntitle{text-decoration:line-through;}
-.nprio-badge{position:absolute;top:9px;right:11px;font-size:8px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;}
-.nph{background:rgba(122,28,28,0.14);color:#7a1c1c;}.npm{background:rgba(160,100,0,0.14);color:#6e4600;}.npl{background:rgba(40,80,15,0.14);color:#285014;}
-.ncat{font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:rgba(20,10,10,0.72);margin-bottom:5px;font-family:'DM Mono',monospace;}
-.ntitle{font-size:14px;font-weight:700;color:#1a0e0e;line-height:1.3;margin-bottom:4px;padding-right:44px;}
-.ndesc{font-size:11.5px;color:rgba(20,10,10,0.82);font-weight:500;line-height:1.45;margin-bottom:7px;white-space:pre-wrap;word-break:break-word;}
+.note-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--note-accent);flex-shrink:0;box-shadow:0 0 6px rgba(0,0,0,0.25);}
+.nprio-badge{position:absolute;top:9px;right:11px;font-size:8px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;}
+.nph{background:rgba(204,51,51,0.22);color:#e88080;}.npm{background:rgba(196,104,42,0.22);color:#e8a060;}.npl{background:rgba(74,138,74,0.22);color:#8fce8f;}
+.ncat{font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:7px;}
+.ntitle{font-size:14px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:4px;padding-right:44px;}
+.ndesc{font-size:11.5px;color:var(--text2);font-weight:400;line-height:1.45;margin-bottom:7px;white-space:pre-wrap;word-break:break-word;}
 .task-img{max-width:100%;max-height:160px;border-radius:5px;cursor:pointer;display:block;margin:6px 0;border:1px solid rgba(20,10,10,0.18);box-shadow:0 1px 4px rgba(0,0,0,0.18);transition:transform 0.12s;}
 .task-img:hover{transform:scale(1.02);}
 .task-link{color:#7a1c1c;text-decoration:underline;word-break:break-all;}
 .task-link:hover{color:#a83828;}
 
-/* ── CHECKLIST — board card (light bg) ── */
-.cl-card{margin-top:7px;padding-top:6px;border-top:1px solid rgba(20,10,10,0.13);display:flex;flex-direction:column;gap:1px;}
-.cl-card-item{display:flex;align-items:center;gap:7px;padding:3px 5px;color:rgba(20,10,10,0.82);cursor:pointer;border-radius:4px;line-height:1.3;}
-.cl-card-item:hover{background:rgba(20,10,10,0.07);}
-.cl-card-item.done .cl-card-label{text-decoration:line-through;color:rgba(20,10,10,0.45);}
-.cl-card-check{width:13px;font-weight:800;color:rgba(20,10,10,0.45);font-family:'DM Mono',monospace;flex-shrink:0;text-align:center;}
-.cl-card-item.done .cl-card-check{color:#3d6f3d;}
+/* ── CHECKLIST — board card (dark bg) ── */
+.cl-card{margin-top:7px;padding-top:6px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:1px;}
+.cl-card-item{display:flex;align-items:center;gap:7px;padding:3px 5px;color:var(--text2);cursor:pointer;border-radius:4px;line-height:1.3;}
+.cl-card-item:hover{background:var(--bg3);}
+.cl-card-item.done .cl-card-label{text-decoration:line-through;color:var(--text3);}
+.cl-card-check{width:13px;font-weight:800;color:var(--text3);font-family:'DM Mono',monospace;flex-shrink:0;text-align:center;}
+.cl-card-item.done .cl-card-check{color:var(--amber);}
 .cl-card-label{flex:1;word-break:break-word;}
 .cl-card-progress{display:flex;align-items:center;gap:7px;margin-top:5px;padding:0 5px;}
-.cl-card-track{flex:1;height:4px;background:rgba(20,10,10,0.13);border-radius:2px;overflow:hidden;}
-.cl-card-fill{height:100%;background:rgba(20,10,10,0.55);border-radius:2px;transition:width 0.2s ease;}
-.cl-card-text{font-family:'DM Mono',monospace;color:rgba(20,10,10,0.6);font-weight:700;flex-shrink:0;}
+.cl-card-track{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.cl-card-fill{height:100%;background:var(--amber);border-radius:2px;transition:width 0.2s ease;}
+.cl-card-text{font-family:'DM Mono',monospace;color:var(--text3);font-weight:700;flex-shrink:0;}
 
 /* ── CHECKLIST — list row detail (dark bg) ── */
 .cl-list{margin:8px 0 10px;display:flex;flex-direction:column;gap:1px;}
@@ -183,21 +188,21 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .lightbox-close:hover{background:rgba(0,0,0,0.85);}
 .lightbox-open{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;padding:8px 14px;border-radius:6px;text-decoration:none;font-size:11px;font-family:'DM Mono',monospace;}
 .lightbox-open:hover{background:rgba(0,0,0,0.85);}
-.ndl{font-size:9px;font-family:'DM Mono',monospace;color:#7a1c1c;margin-bottom:6px;}
-.ndl.overdue{color:#cc0000;font-weight:700;}
-.ntimer{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:#7a1c1c;margin-top:6px;font-weight:500;}
-.npulse{width:5px;height:5px;border-radius:50%;background:#7a1c1c;animation:pp 1.2s infinite;}
+.ndl{font-size:9px;font-family:'DM Mono',monospace;color:var(--text2);margin-bottom:6px;}
+.ndl.overdue{color:#e88080;font-weight:700;}
+.ntimer{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);margin-top:6px;font-weight:600;}
+.npulse{width:5px;height:5px;border-radius:50%;background:var(--amber);animation:pp 1.2s infinite;}
 @keyframes pp{0%,100%{opacity:1;}50%{opacity:0.2;}}
-.npaused{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:rgba(20,10,10,0.5);margin-top:6px;}
-.done-log{font-size:9px;font-family:'DM Mono',monospace;color:rgba(20,10,10,0.5);margin-top:6px;}
+.npaused{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:6px;}
+.done-log{font-size:9px;font-family:'DM Mono',monospace;color:var(--text2);margin-top:6px;}
 .nbtns{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
-.nbtn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:rgba(20,10,10,0.1);border:1px solid rgba(20,10,10,0.12);border-radius:3px;padding:4px 9px;cursor:pointer;font-family:'Syne',sans-serif;color:#1a0e0e;transition:background 0.1s;}
-.nbtn:hover{background:rgba(20,10,10,0.18);}
-.nbtn.danger{background:rgba(122,28,28,0.1);color:#7a1c1c;border-color:rgba(122,28,28,0.15);}
-.nbtn.danger:hover{background:rgba(122,28,28,0.2);}
-.nbtn.comment{background:rgba(20,10,10,0.07);color:rgba(20,10,10,0.55);}
-.nbtn.reorder{background:rgba(20,10,10,0.05);color:rgba(20,10,10,0.45);padding:4px 8px;font-size:11px;line-height:1;}
-.nbtn.reorder:hover{background:rgba(20,10,10,0.14);color:rgba(20,10,10,0.75);}
+.nbtn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:4px 9px;cursor:pointer;font-family:'Syne',sans-serif;color:var(--text);transition:background 0.1s,color 0.1s;}
+.nbtn:hover{background:var(--bg4);}
+.nbtn.danger{background:rgba(204,51,51,0.10);color:#e88080;border-color:rgba(204,51,51,0.25);}
+.nbtn.danger:hover{background:rgba(204,51,51,0.22);}
+.nbtn.comment{background:var(--bg3);color:var(--text2);}
+.nbtn.reorder{background:var(--bg3);color:var(--text3);padding:4px 8px;font-size:11px;line-height:1;}
+.nbtn.reorder:hover{background:var(--bg4);color:var(--text);}
 .lr-reorder{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:6px 6px;line-height:1;border-radius:4px;}
 .lr-reorder:hover{color:var(--text);background:var(--bg3);}
 .resume-banner{display:flex;align-items:center;gap:10px;padding:9px 16px;background:var(--amber-dim);border-bottom:1px solid var(--amber);color:var(--text);font-size:12px;font-family:'DM Mono',monospace;flex-wrap:wrap;}
@@ -211,12 +216,13 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .reconnect-banner button{font-size:10px;padding:6px 11px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
 .reconnect-banner button.primary{background:var(--crimson);color:#f5c5a3;border-color:var(--crimson);}
 .reconnect-banner button:hover{opacity:0.88;}
-.by-line{font-size:9px;color:rgba(20,10,10,0.38);font-family:'DM Mono',monospace;margin-top:7px;}
-.pts-badge{display:inline-flex;align-items:center;font-size:9px;font-family:'DM Mono',monospace;background:rgba(20,10,10,0.08);border-radius:3px;padding:2px 6px;color:rgba(20,10,10,0.5);margin-top:4px;}
+.by-line{font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:7px;}
+.pts-badge{display:inline-flex;align-items:center;font-size:9px;font-family:'DM Mono',monospace;background:var(--amber-dim);border-radius:3px;padding:2px 6px;color:var(--amber);margin-top:4px;font-weight:700;}
 
 /* ── LIST VIEW ── */
 .list-view{padding:4px 16px 80px;display:flex;flex-direction:column;gap:0;}
-.list-section-head{display:flex;align-items:center;gap:8px;padding:14px 4px 8px;position:sticky;top:0;background:var(--bg);z-index:10;}
+.list-section-head{display:flex;align-items:center;gap:8px;padding:14px 4px 8px;position:sticky;top:0;background:var(--bg);z-index:10;cursor:pointer;user-select:none;}
+.list-section-head:hover .list-section-label{color:var(--text);}
 .list-section-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .list-section-label{font-size:10px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;font-family:'DM Mono',monospace;color:var(--text2);}
 .list-section-count{font-size:9px;font-family:'DM Mono',monospace;background:rgba(255,255,255,0.06);border-radius:10px;padding:1px 8px;color:var(--text3);}
@@ -425,8 +431,7 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .refresh-btn:disabled{opacity:0.5;cursor:default;}
 
 /* ── PRIORITY INTENSITY FILTERS ── */
-.note.prio-high{filter:saturate(1.4) brightness(0.92);}
-.note.prio-low{filter:saturate(0.6) brightness(1.1);}
+/* Priority is now shown via the HIGH/MED/LOW badge — no filter needed on the dark card itself */
 
 /* ── COLOR PICKER ── */
 .color-picker-row{display:flex;gap:8px;flex-wrap:wrap;padding:2px 0;}
@@ -475,6 +480,7 @@ const DELETED_IDS_KEY    = 'bvb_deleted_v1';
 const HOURS_KEY          = 'bvb_hours_v1';
 const PERMISSIONS_KEY    = 'bvb_permissions_v1';
 const MANUAL_ORDER_KEY   = 'bvb_manual_order_v1';
+const COLLAPSED_KEY      = 'bvb_collapsed_v1';
 const DEFAULT_PIN        = '1234';
 const APP_VERSION        = '1.0.0';
 
@@ -718,6 +724,16 @@ async function sheetUpdate(cfg,task){
     const row=i+1;
     await sheetsReq(cfg,'PUT',`/values/Tasks!A${row}:P${row}?valueInputOption=RAW`,{values:[taskRow(task)]});
   }catch(e){console.warn('sheet update',e);}
+}
+async function sheetClearRow(cfg,taskId){
+  try{
+    const d=await sheetsReq(cfg,'GET','/values/Tasks!A:A');
+    if(!d.values)return;
+    const i=d.values.findIndex(r=>r[0]===taskId);
+    if(i<1)return; // not found or header row — nothing to clear
+    const row=i+1;
+    await sheetsReq(cfg,'POST',`/values/Tasks!A${row}:P${row}:clear`,{});
+  }catch(e){console.warn('sheet clear',e);}
 }
 async function sheetRewrite(cfg,tasks){
   await ensureHeaders(cfg);
@@ -1093,7 +1109,6 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
 // ── TASK CARD ──────────────────────────────────────────────────────────────
 function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,fontSize,allCats}){
   const {col,hex,rot}=noteStyle(task.id,task.priority,task.noteColor);
-  const prioClass=hex?'':(task.priority==='high'?' prio-high':task.priority==='low'?' prio-low':'');
   const isDone=!!task.completedAt;
   const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
   const isPaused=task.acceptedAt&&!task.completedAt&&!!task.pausedAt;
@@ -1105,10 +1120,13 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
   const commentCount=(task.comments||[]).length;
   const cats=allCats||CATS;
   return(
-    <div className={`note ${col} ${rot}${prioClass}${isDone?' is-done':''}`} style={{fontSize:fs+'px',...(hex?{background:hex}:{})}}
+    <div className={`note ${col} ${rot}${isDone?' is-done':''}`} style={{fontSize:fs+'px',...(hex?{'--note-accent':hex}:{})}}
       draggable={!isDone}
       onDragStart={e=>{e.dataTransfer.setData('taskId',task.id);e.dataTransfer.effectAllowed='move';}}>
-      <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</div>
+      <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>
+        <span className="note-dot"/>
+        <span>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</span>
+      </div>
       <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
       <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
       {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{renderText(task.desc)}</div>}
@@ -1673,6 +1691,8 @@ function App(){
     if(saved&&typeof saved==='object')return Object.entries(saved).sort(([,a],[,b])=>a-b).map(([id])=>id);
     return [];
   });
+  const [collapsed,setCollapsed]=useState(()=>getSaved(COLLAPSED_KEY)||{open:false,inprog:false,done:false});
+  const toggleCollapsed=k=>setCollapsed(prev=>({...prev,[k]:!prev[k]}));
   const setSortBy=newSort=>{ setSortByRaw(newSort); if(newSort!=='manual')setManualOrder([]); };
   const [statusFilter,setStatusFilter]=useState('all');
   const [managedCats,setManagedCats]=useState(()=>getSaved(MANAGED_CATS_KEY)||[...CATS]);
@@ -1690,6 +1710,7 @@ function App(){
   const pushingClientsRef=useRef(false);
   const pushingCatsRef=useRef(false);
   const pushingProjectsRef=useRef(false);
+  const pushingDeletedRef=useRef(false);
   const tasksRef=useRef(tasks);
   useEffect(()=>{tasksRef.current=tasks;},[tasks]);
   const userRef=useRef(user);
@@ -1720,6 +1741,7 @@ function App(){
   useEffect(()=>{safeStore(HOURS_KEY,hours);},[hours]);
   useEffect(()=>{safeStore(PERMISSIONS_KEY,permissions);},[permissions]);
   useEffect(()=>{safeStore(MANUAL_ORDER_KEY,manualOrder);},[manualOrder]);
+  useEffect(()=>{safeStore(COLLAPSED_KEY,collapsed);},[collapsed]);
   useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-foundry');},[settings.theme]);
 
   // ── Try to restore session from stored token ──
@@ -1881,22 +1903,40 @@ function App(){
     }
   };
 
-  const handleDelete=id=>{
-    setDeletedIds(prev=>{const n=new Set(prev);n.add(id);return n;});
+  const handleDelete=async id=>{
+    const newDeleted=new Set(deletedIds);newDeleted.add(id);
+    setDeletedIds(newDeleted);
     setTasks(prev=>prev.filter(t=>t.id!==id));
     setManualOrder(prev=>{const i=prev.indexOf(id);return i===-1?prev:prev.filter(x=>x!==id);});
     playSound('delete');
+    if(configRef.current?.accessToken){
+      pushingDeletedRef.current=true;
+      try{
+        await sheetClearRow(configRef.current,id);
+        await saveAppConfigKey(configRef.current,'deletedIds',[...newDeleted]);
+      }catch(e){/* silent — local state already updated */}
+      finally{setTimeout(()=>{pushingDeletedRef.current=false;},1500);}
+    }
   };
   const handleClearTasks=()=>{setTasks([]);showToast('All tasks cleared','');};
-  const handleClearCompleted=()=>{
+  const handleClearCompleted=async()=>{
     const completed=tasks.filter(t=>t.completedAt);
     if(!completed.length)return;
     const ids=new Set(completed.map(t=>t.id));
-    setDeletedIds(prev=>new Set([...prev,...ids]));
+    const newDeleted=new Set([...deletedIds,...ids]);
+    setDeletedIds(newDeleted);
     setTasks(prev=>prev.filter(t=>!t.completedAt));
     setManualOrder(prev=>{const filtered=prev.filter(id=>!ids.has(id));return filtered.length===prev.length?prev:filtered;});
     showToast('Cleared completed tasks','success');
     playSound('delete');
+    if(configRef.current?.accessToken){
+      pushingDeletedRef.current=true;
+      try{
+        await Promise.all([...ids].map(id=>sheetClearRow(configRef.current,id)));
+        await saveAppConfigKey(configRef.current,'deletedIds',[...newDeleted]);
+      }catch(e){/* silent */}
+      finally{setTimeout(()=>{pushingDeletedRef.current=false;},1500);}
+    }
   };
   const handleSheetRewrite=async()=>{
     if(!config?.accessToken){showToast('Not connected to Sheets','error');return;}
@@ -2014,6 +2054,13 @@ function App(){
         }
         if(!pushingProjectsRef.current&&appCfg.projects&&typeof appCfg.projects==='object'){
           setProjects(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.projects)?prev:appCfg.projects);
+        }
+        if(!pushingDeletedRef.current&&Array.isArray(appCfg.deletedIds)){
+          setDeletedIds(prev=>{
+            let changed=false;const merged=new Set(prev);
+            for(const id of appCfg.deletedIds){if(!merged.has(id)){merged.add(id);changed=true;}}
+            return changed?merged:prev;
+          });
         }
       }catch(e){/* ignore */}
     }catch{if(!silent)showToast('Refresh failed','error');}
@@ -2268,16 +2315,19 @@ function App(){
                   ].filter(col=>statusFilter==='all'||statusFilter===col.k).map(col=>(
                     <div key={col.k} className={`col-wrap${dragOver===col.k?' drag-over':''}`}
                       onDragOver={e=>{e.preventDefault();setDragOver(col.k);}} onDragLeave={()=>setDragOver(null)} onDrop={e=>handleDrop(e,col.k)}>
-                      <div className="col-head">
+                      <div className="col-head" onClick={()=>toggleCollapsed(col.k)} title={collapsed[col.k]?'Expand':'Collapse'}>
                         <div className="cdot" style={{background:col.color}}/>
                         <span className="clabel">{col.label}</span>
                         <span className="ccount">{col.items.length}</span>
-                        {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={handleClearCompleted} title="Clear all completed">🗑️</button>}
+                        {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={e=>{e.stopPropagation();handleClearCompleted();}} title="Clear all completed">🗑️</button>}
+                        <span className={`col-collapse${collapsed[col.k]?' closed':' open'}`}>▾</span>
                       </div>
-                      <div className="col-body">
-                        {col.items.length===0&&<div className="col-empty">{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
-                        {col.items.map(t=><TaskCard key={t.id} task={t} {...cardProps}/>)}
-                      </div>
+                      {!collapsed[col.k]&&(
+                        <div className="col-body">
+                          {col.items.length===0&&<div className="col-empty">{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
+                          {col.items.map(t=><TaskCard key={t.id} task={t} {...cardProps}/>)}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -2294,14 +2344,17 @@ function App(){
                     {k:'done',  label:'Done',        color:'#4a8a4a',items:doneTasks},
                   ].filter(col=>statusFilter==='all'||statusFilter===col.k).map(col=>(
                     <div key={col.k}>
-                      <div className="list-section-head">
+                      <div className="list-section-head" onClick={()=>toggleCollapsed(col.k)} title={collapsed[col.k]?'Expand':'Collapse'}>
                         <div className="list-section-dot" style={{background:col.color}}/>
                         <span className="list-section-label">{col.label}</span>
                         <span className="list-section-count">{col.items.length}</span>
-                        {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={handleClearCompleted} title="Clear all completed">🗑️</button>}
+                        {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={e=>{e.stopPropagation();handleClearCompleted();}} title="Clear all completed">🗑️</button>}
+                        <span className={`col-collapse${collapsed[col.k]?' closed':' open'}`} style={{marginLeft:'auto'}}>▾</span>
                       </div>
-                      {col.items.length===0&&<div style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace',padding:'8px 4px 16px',fontStyle:'italic'}}>{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
-                      {col.items.map(t=><ListRow key={t.id} task={t} {...cardProps}/>)}
+                      {!collapsed[col.k]&&(<>
+                        {col.items.length===0&&<div style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace',padding:'8px 4px 16px',fontStyle:'italic'}}>{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
+                        {col.items.map(t=><ListRow key={t.id} task={t} {...cardProps}/>)}
+                      </>)}
                     </div>
                   ))}
                 </div>
