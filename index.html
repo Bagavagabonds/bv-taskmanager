@@ -127,7 +127,9 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .col-empty{border:1px dashed var(--border2);border-radius:8px;padding:24px 14px;text-align:center;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;}
 
 /* ── TASK CARD ── */
-.note{--note-accent:var(--border2);background:var(--bg2);color:var(--text);border-radius:8px;padding:13px 14px 11px;position:relative;cursor:grab;border:1.5px solid var(--note-accent);box-shadow:0 1px 3px rgba(0,0,0,0.32),0 2px 8px rgba(0,0,0,0.20);transition:box-shadow 0.18s ease,transform 0.18s ease,border-color 0.15s ease;}
+.note{--note-accent:var(--border2);background:var(--bg2);color:var(--text);border-radius:8px;position:relative;cursor:grab;border:1.5px solid var(--note-accent);box-shadow:0 1px 3px rgba(0,0,0,0.32),0 2px 8px rgba(0,0,0,0.20);transition:box-shadow 0.18s ease,transform 0.18s ease,border-color 0.15s ease;overflow:hidden;}
+.note-head{padding:11px 14px 9px;position:relative;background:var(--bg2);}
+.note-body{padding:10px 14px 12px;background:var(--bg3);border-top:1px solid var(--border);}
 .note:hover{box-shadow:0 4px 14px rgba(0,0,0,0.45),0 2px 5px rgba(0,0,0,0.28);transform:translateY(-3px) scale(1.012);}
 .note:active{cursor:grabbing;}
 .n-y{--note-accent:#f2e49a;}.n-o{--note-accent:#f5cc90;}.n-g{--note-accent:#c2e098;}.n-b{--note-accent:#a2cff0;}.n-pk{--note-accent:#f0b0c8;}.n-pu{--note-accent:#cab8f2;}
@@ -1123,12 +1125,15 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
     <div className={`note ${col} ${rot}${isDone?' is-done':''}`} style={{fontSize:fs+'px',...(hex?{'--note-accent':hex}:{})}}
       draggable={!isDone}
       onDragStart={e=>{e.dataTransfer.setData('taskId',task.id);e.dataTransfer.effectAllowed='move';}}>
-      <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>
-        <span className="note-dot"/>
-        <span>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</span>
+      <div className="note-head">
+        <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>
+          <span className="note-dot"/>
+          <span>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</span>
+        </div>
+        <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
+        <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
       </div>
-      <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
-      <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
+      <div className="note-body">
       {task.desc&&<div className="ndesc" style={{fontSize:(fs*0.82)+'px'}}>{renderText(task.desc)}</div>}
       {Array.isArray(task.checklist)&&task.checklist.length>0&&(()=>{
         const total=task.checklist.length;
@@ -1167,6 +1172,7 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
         {onMoveDown&&<button className="nbtn reorder" title="Move down" onClick={()=>onMoveDown(task)}>▼</button>}
       </div>
       <div className="by-line" style={{fontSize:(fs*0.64)+'px'}}>{task.assignedTo&&!isDone?`→ ${task.assignedTo} · `:''}{task.createdBy} · {fmtTime(task.createdAt)}</div>
+      </div>
     </div>
   );
 }
