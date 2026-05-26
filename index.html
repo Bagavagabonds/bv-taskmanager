@@ -487,6 +487,7 @@ const PERMISSIONS_KEY    = 'bvb_permissions_v1';
 const MANUAL_ORDER_KEY   = 'bvb_manual_order_v1';
 const COLLAPSED_KEY      = 'bvb_collapsed_v1';
 const COLLAPSED_CARDS_KEY= 'bvb_collapsed_cards_v1';
+const EXPANDED_ROWS_KEY  = 'bvb_expanded_rows_v1';
 const DEFAULT_PIN        = '1234';
 const APP_VERSION        = '1.0.0';
 
@@ -1183,8 +1184,8 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
 }
 
 // ── LIST ROW ───────────────────────────────────────────────────────────────
-function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,allCats}){
-  const [open,setOpen]=useState(false);
+function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,onToggleExpand,expanded,allCats}){
+  const open=!!expanded;
   const isDone=!!task.completedAt;
   const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
   const isPaused=task.acceptedAt&&!task.completedAt&&!!task.pausedAt;
@@ -1204,7 +1205,7 @@ function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,o
 
   return(
     <div className="list-row">
-      <div className="list-row-main" onClick={()=>setOpen(o=>!o)}>
+      <div className="list-row-main" onClick={()=>onToggleExpand&&onToggleExpand(task.id)}>
         <div className="lr-dot" style={{background:dotColor}}/>
         <div className={`lr-title${isDone?' is-done':''}`}>{task.title}</div>
         {displayName&&<div className="lr-assignee">{displayName}</div>}
@@ -1718,6 +1719,26 @@ function App(){
       return next;
     });
   };
+  // List-view row expansion (default is collapsed, opposite of cards) — lifted from ListRow so section chevron can drive it.
+  const [expandedRows,setExpandedRows]=useState(()=>new Set(getSaved(EXPANDED_ROWS_KEY)||[]));
+  const toggleRowExpand=id=>setExpandedRows(prev=>{const n=new Set(prev);if(n.has(id))n.delete(id);else n.add(id);return n;});
+  const isListSectionCompacted=items=>{
+    if(items.length===0)return false;
+    const firstId=items[0].id;
+    if(!expandedRows.has(firstId))return false;
+    return items.slice(1).every(t=>!expandedRows.has(t.id));
+  };
+  const compactListSection=items=>{
+    if(items.length===0)return;
+    const firstId=items[0].id;
+    setExpandedRows(prev=>{
+      const wasCompacted=prev.has(firstId)&&items.slice(1).every(t=>!prev.has(t.id));
+      const next=new Set(prev);
+      for(const t of items)next.delete(t.id);
+      if(!wasCompacted)next.add(firstId);
+      return next;
+    });
+  };
   const setSortBy=newSort=>{ setSortByRaw(newSort); if(newSort!=='manual')setManualOrder([]); };
   const [statusFilter,setStatusFilter]=useState('all');
   const [managedCats,setManagedCats]=useState(()=>getSaved(MANAGED_CATS_KEY)||[...CATS]);
@@ -1768,6 +1789,7 @@ function App(){
   useEffect(()=>{safeStore(MANUAL_ORDER_KEY,manualOrder);},[manualOrder]);
   useEffect(()=>{safeStore(COLLAPSED_KEY,collapsed);},[collapsed]);
   useEffect(()=>{safeStore(COLLAPSED_CARDS_KEY,[...collapsedCards]);},[collapsedCards]);
+  useEffect(()=>{safeStore(EXPANDED_ROWS_KEY,[...expandedRows]);},[expandedRows]);
   useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-foundry');},[settings.theme]);
 
   // ── Try to restore session from stored token ──
@@ -2229,7 +2251,7 @@ function App(){
     if(sortBy!=='manual')setSortByRaw('manual');
   };
 
-  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),onToggleChecklist:handleToggleChecklist,onToggleCollapse:toggleCardCollapse,fontSize:settings.fontSize||14,allCats:managedCats};
+  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),onToggleChecklist:handleToggleChecklist,onToggleCollapse:toggleCardCollapse,onToggleExpand:toggleRowExpand,fontSize:settings.fontSize||14,allCats:managedCats};
 
   if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
   if(!user)return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
@@ -2368,17 +2390,15 @@ function App(){
                     {k:'done',  label:'Done',        color:'#4a8a4a',items:doneTasks},
                   ].filter(col=>statusFilter==='all'||statusFilter===col.k).map(col=>(
                     <div key={col.k}>
-                      <div className="list-section-head" onClick={()=>toggleCollapsed(col.k)} title={collapsed[col.k]?'Expand':'Collapse'}>
+                      <div className="list-section-head" onClick={()=>compactListSection(col.items)} title={isListSectionCompacted(col.items)?'Collapse top':'Expand top task'}>
                         <div className="list-section-dot" style={{background:col.color}}/>
                         <span className="list-section-label">{col.label}</span>
                         <span className="list-section-count">{col.items.length}</span>
                         {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={e=>{e.stopPropagation();handleClearCompleted();}} title="Clear all completed">🗑️</button>}
-                        <span className={`col-collapse${collapsed[col.k]?' closed':' open'}`} style={{marginLeft:'auto'}}>▾</span>
+                        <span className={`col-collapse${isListSectionCompacted(col.items)?' closed':' open'}`} style={{marginLeft:'auto'}}>▾</span>
                       </div>
-                      {!collapsed[col.k]&&(<>
-                        {col.items.length===0&&<div style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace',padding:'8px 4px 16px',fontStyle:'italic'}}>{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
-                        {col.items.map(t=><ListRow key={t.id} task={t} {...cardProps}/>)}
-                      </>)}
+                      {col.items.length===0&&<div style={{fontSize:'11px',color:'var(--text3)',fontFamily:'DM Mono,monospace',padding:'8px 4px 16px',fontStyle:'italic'}}>{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
+                      {col.items.map(t=><ListRow key={t.id} task={t} expanded={expandedRows.has(t.id)} {...cardProps}/>)}
                     </div>
                   ))}
                 </div>
