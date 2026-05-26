@@ -2341,19 +2341,17 @@ function App(){
                   ].filter(col=>statusFilter==='all'||statusFilter===col.k).map(col=>(
                     <div key={col.k} className={`col-wrap${dragOver===col.k?' drag-over':''}`}
                       onDragOver={e=>{e.preventDefault();setDragOver(col.k);}} onDragLeave={()=>setDragOver(null)} onDrop={e=>handleDrop(e,col.k)}>
-                      <div className="col-head" onClick={()=>toggleCollapsed(col.k)} title={collapsed[col.k]?'Expand':'Collapse'}>
+                      <div className="col-head" onClick={()=>compactSection(col.items)} title={isSectionCompacted(col.items)?'Expand all':'Compact all (keeps top task expanded)'}>
                         <div className="cdot" style={{background:col.color}}/>
                         <span className="clabel">{col.label}</span>
                         <span className="ccount">{col.items.length}</span>
                         {col.k==='done'&&doneTasks.length>0&&<button className="trash-done-btn" onClick={e=>{e.stopPropagation();handleClearCompleted();}} title="Clear all completed">🗑️</button>}
-                        <span className={`col-collapse${collapsed[col.k]?' closed':' open'}`}>▾</span>
+                        <span className={`col-collapse${isSectionCompacted(col.items)?' closed':' open'}`}>▾</span>
                       </div>
-                      {!collapsed[col.k]&&(
-                        <div className="col-body">
-                          {col.items.length===0&&<div className="col-empty">{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
-                          {col.items.map(t=><TaskCard key={t.id} task={t} collapsed={collapsedCards.has(t.id)} {...cardProps}/>)}
-                        </div>
-                      )}
+                      <div className="col-body">
+                        {col.items.length===0&&<div className="col-empty">{col.k==='done'?'nothing done yet':col.k==='inprog'?'nothing active':'all clear'}</div>}
+                        {col.items.map(t=><TaskCard key={t.id} task={t} collapsed={collapsedCards.has(t.id)} {...cardProps}/>)}
+                      </div>
                     </div>
                   ))}
                 </div>
