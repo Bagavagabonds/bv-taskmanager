@@ -1706,6 +1706,18 @@ function App(){
   const toggleCollapsed=k=>setCollapsed(prev=>({...prev,[k]:!prev[k]}));
   const [collapsedCards,setCollapsedCards]=useState(()=>new Set(getSaved(COLLAPSED_CARDS_KEY)||[]));
   const toggleCardCollapse=id=>setCollapsedCards(prev=>{const n=new Set(prev);if(n.has(id))n.delete(id);else n.add(id);return n;});
+  const isSectionCompacted=items=>{if(items.length<=1)return false;return items.slice(1).every(t=>collapsedCards.has(t.id));};
+  const compactSection=items=>{
+    if(items.length===0)return;
+    const rest=items.slice(1).map(t=>t.id);
+    const alreadyCompact=rest.length>0&&rest.every(id=>collapsedCards.has(id));
+    setCollapsedCards(prev=>{
+      const next=new Set(prev);
+      if(alreadyCompact){for(const t of items)next.delete(t.id);}
+      else{next.delete(items[0]?.id);for(const id of rest)next.add(id);}
+      return next;
+    });
+  };
   const setSortBy=newSort=>{ setSortByRaw(newSort); if(newSort!=='manual')setManualOrder([]); };
   const [statusFilter,setStatusFilter]=useState('all');
   const [managedCats,setManagedCats]=useState(()=>getSaved(MANAGED_CATS_KEY)||[...CATS]);
