@@ -326,6 +326,10 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .log-table tr:hover td{background:var(--bg3);}
 .log-table td.tname{color:var(--text);font-weight:600;font-size:13px;}
 .log-table td.tmono{font-family:'DM Mono',monospace;font-size:11px;}
+.log-edit-select{background:transparent;border:none;border-bottom:1px dashed var(--text3);color:var(--text);font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;padding:2px 6px;border-radius:3px;outline:none;transition:background 0.1s,border-color 0.1s;}
+.log-edit-select:hover{background:var(--bg4);border-bottom-color:var(--amber);}
+.log-edit-select:focus{background:var(--bg4);border-bottom-color:var(--amber);}
+.log-edit-select option{background:var(--bg2);color:var(--text);}
 .sheets-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--amber);font-family:'DM Mono',monospace;background:var(--amber-dim);border:1px solid var(--amber-dim);border-radius:6px;padding:6px 13px;cursor:pointer;text-decoration:none;}
 .no-tasks-msg{text-align:center;padding:52px 24px;font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;}
 
@@ -1365,14 +1369,14 @@ function Sidebar({tasks,hours}){
 }
 
 // ── LOG VIEW ───────────────────────────────────────────────────────────────
-function LogView({tasks,config}){
+function LogView({tasks,config,adminUnlocked,allTeam,onUpdate}){
   const done=tasks.filter(t=>t.completedAt);
   const avg=done.length?done.reduce((a,t)=>a+(t.duration||0),0)/done.length:0;
   const today=done.filter(t=>new Date(t.completedAt).toDateString()===new Date().toDateString());
   return(
     <div className="log-view">
       <div className="log-header">
-        <div><h2>Task History</h2><p>Full log — who, when, how long, how many points</p></div>
+        <div><h2>Task History</h2><p>Full log — who, when, how long, how many points{adminUnlocked&&<span style={{marginLeft:'10px',fontSize:'10px',color:'var(--amber)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em',textTransform:'uppercase'}}>· admin: completed-by is editable</span>}</p></div>
         {config?.sheetId&&<a className="sheets-btn" target="_blank" rel="noopener" href={`https://docs.google.com/spreadsheets/d/${config.sheetId}`}>↗ Open in Sheets</a>}
       </div>
       <div className="log-stats">
@@ -1392,7 +1396,13 @@ function LogView({tasks,config}){
                   <td className="tmono">{t.client||'—'}</td>
                   <td><span className={`nprio-badge ${t.priority==='high'?'nph':t.priority==='med'?'npm':'npl'}`} style={{position:'static',display:'inline-block',fontSize:'9px'}}>{t.priority}</span></td>
                   <td className="tmono">{t.createdBy||'—'}</td>
-                  <td className="tmono">{t.assignedTo||'—'}</td>
+                  <td className="tmono">{adminUnlocked&&onUpdate?(
+                    <select className="log-edit-select" value={t.assignedTo||''} onChange={e=>onUpdate(t.id,'assignedTo',e.target.value)} title="Admin: change who completed this task">
+                      <option value="">—</option>
+                      {(allTeam||[]).map(m=><option key={m.email} value={m.name}>{m.name}</option>)}
+                      {t.assignedTo&&!(allTeam||[]).find(m=>m.name===t.assignedTo)&&<option value={t.assignedTo}>{t.assignedTo}</option>}
+                    </select>
+                  ):(t.assignedTo||'—')}</td>
                   <td className="tmono">{fmtTime(t.completedAt)}</td>
                   <td className="tmono" style={{color:'var(--amber)'}}>{fmtDur(t.duration)}</td>
                   <td className="tmono" style={{color:'var(--amber)',fontWeight:'700'}}>{t.points||'—'}</td>
@@ -1453,13 +1463,13 @@ function ScoresView({tasks,manualBadges,demerits}){
 }
 
 // ── SETTINGS VIEW ──────────────────────────────────────────────────────────
-function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange,permissions,onPermissionsChange}){
+function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange,permissions,onPermissionsChange,adminUnlocked,onAdminChange}){
   const [draft,setDraft]=useState(settings);
   const [saved,setSaved]=useState(false);
   const [devOpen,setDevOpen]=useState(false);
   const [devPin,setDevPin]=useState('');
   const [devError,setDevError]=useState(false);
-  const [adminUnlocked,setAdminUnlocked]=useState(false);
+  const setAdminUnlocked=onAdminChange;
   const [badgeMember,setBadgeMember]=useState(allTeam[0].name);
   const [demeritMember,setDemeritMember]=useState(allTeam[0].name);
   const [demeritPts,setDemeritPts]=useState(1);
@@ -1680,6 +1690,7 @@ function App(){
   const [settings,setSettings]=useState(()=>getSaved(SETTINGS_KEY)||{theme:'theme-foundry',fontSize:14,viewMode:isMobileWidth()?'list':'cards'});
   const [hours,setHours]=useState(()=>getSaved(HOURS_KEY)||DEFAULT_HOURS);
   const [permissions,setPermissions]=useState(()=>getSaved(PERMISSIONS_KEY)||{});
+  const [adminUnlocked,setAdminUnlocked]=useState(false);
   const [manualBadges,setManualBadges]=useState(()=>getSaved(BADGES_KEY)||{});
   const [demerits,setDemerits]=useState(()=>getSaved(DEMERITS_KEY)||[]);
   const [view,setView]=useState('board');
@@ -1918,6 +1929,15 @@ function App(){
     setTasks(updated);playSound('accept');
     showToast(isFirstStart?'Timer started ⏱':'Resumed ▶','success');
     await syncTask(updated.find(t=>t.id===task.id));
+  };
+
+  // Admin-only: edit a single field on a task (used by the History view for fixing "Completed by")
+  const handleHistoryUpdate=async(taskId,field,value)=>{
+    const t=tasksRef.current.find(x=>x.id===taskId);
+    if(!t)return;
+    const updated={...t,[field]:value};
+    setTasks(prev=>prev.map(x=>x.id===taskId?updated:x));
+    await syncTask(updated);
   };
 
   const handleToggleChecklist=async(taskId,itemId)=>{
@@ -2408,9 +2428,9 @@ function App(){
         </div>
       )}
 
-      {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config}/></div>}
+      {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config} adminUnlocked={adminUnlocked} allTeam={allTeam} onUpdate={handleHistoryUpdate}/></div>}
       {view==='scores'&&<div style={{flex:1,overflowY:'auto'}}><ScoresView tasks={tasks} manualBadges={manualBadges} demerits={demerits}/></div>}
-      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange} permissions={permissions} onPermissionsChange={handlePermissionsChange}/></div>}
+      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange} permissions={permissions} onPermissionsChange={handlePermissionsChange} adminUnlocked={adminUnlocked} onAdminChange={setAdminUnlocked}/></div>}
 
       {/* MOBILE NAV */}
       <nav className="mobile-nav">
