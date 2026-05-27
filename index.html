@@ -140,6 +140,8 @@ body{color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;line-heigh
 .note.is-done{opacity:0.55;}
 .note.is-done .ntitle{text-decoration:line-through;}
 .note-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--note-accent);flex-shrink:0;box-shadow:0 0 6px rgba(0,0,0,0.25);}
+.sync-pending-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px rgba(212,168,32,0.6);animation:pp 1.4s infinite;margin-left:6px;flex-shrink:0;}
+.sync-pending-dot[title]{cursor:help;}
 .nprio-badge{position:absolute;top:9px;right:11px;font-size:8px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;}
 .nph{background:rgba(204,51,51,0.22);color:#e88080;}.npm{background:rgba(196,104,42,0.22);color:#e8a060;}.npl{background:rgba(74,138,74,0.22);color:#8fce8f;}
 .ncat{font-size:8px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:'DM Mono',monospace;display:flex;align-items:center;gap:7px;}
@@ -492,6 +494,8 @@ const MANUAL_ORDER_KEY   = 'bvb_manual_order_v1';
 const COLLAPSED_KEY      = 'bvb_collapsed_v1';
 const COLLAPSED_CARDS_KEY= 'bvb_collapsed_cards_v1';
 const EXPANDED_ROWS_KEY  = 'bvb_expanded_rows_v1';
+const PENDING_SYNC_KEY   = 'bvb_pending_sync_v1';
+const SYNC_LOG_KEY       = 'bvb_sync_log_v1';
 const DEFAULT_PIN        = '1234';
 const APP_VERSION        = '1.0.0';
 
@@ -1118,7 +1122,7 @@ function NewTaskModal({currentUser,onClose,onSave,managedClients,managedCats,pro
 }
 
 // ── TASK CARD ──────────────────────────────────────────────────────────────
-function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,onToggleCollapse,collapsed,fontSize,allCats}){
+function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,onToggleCollapse,collapsed,pendingSync,fontSize,allCats}){
   const {col,hex,rot}=noteStyle(task.id,task.priority,task.noteColor);
   const isDone=!!task.completedAt;
   const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
@@ -1138,6 +1142,7 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
         <div className="ncat" style={{fontSize:(fs*0.57)+'px'}}>
           <span className="note-dot"/>
           <span>{cats.find(c=>c.id===task.category)?.label||task.category}{task.client&&task.client!=='General / Internal'?` · ${task.client}`+(task.project?` › ${task.project}`:''):''}</span>
+          {pendingSync&&pendingSync.has(task.id)&&<span className="sync-pending-dot" title="Pending sheet sync — will keep retrying"/>}
         </div>
         <span className={`nprio-badge ${task.priority==='high'?'nph':task.priority==='med'?'npm':'npl'}`} style={{fontSize:(fs*0.57)+'px'}}>{task.priority}</span>
         <div className="ntitle" style={{fontSize:(fs*1)+'px'}}>{task.title}</div>
@@ -1188,7 +1193,7 @@ function TaskCard({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,
 }
 
 // ── LIST ROW ───────────────────────────────────────────────────────────────
-function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,onToggleExpand,expanded,allCats}){
+function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,onEdit,onMoveUp,onMoveDown,onToggleChecklist,onToggleExpand,expanded,pendingSync,allCats}){
   const open=!!expanded;
   const isDone=!!task.completedAt;
   const isActive=task.acceptedAt&&!task.completedAt&&!task.pausedAt;
@@ -1211,7 +1216,7 @@ function ListRow({task,onAccept,onComplete,onPause,onResume,onDelete,onComment,o
     <div className="list-row">
       <div className="list-row-main" onClick={()=>onToggleExpand&&onToggleExpand(task.id)}>
         <div className="lr-dot" style={{background:dotColor}}/>
-        <div className={`lr-title${isDone?' is-done':''}`}>{task.title}</div>
+        <div className={`lr-title${isDone?' is-done':''}`}>{task.title}{pendingSync&&pendingSync.has(task.id)&&<span className="sync-pending-dot" title="Pending sheet sync — will keep retrying"/>}</div>
         {displayName&&<div className="lr-assignee">{displayName}</div>}
         {commentCount>0&&<div className="lr-comment-badge">💬{commentCount}</div>}
         {onMoveUp&&<button className="lr-reorder" title="Move up" onClick={e=>{e.stopPropagation();onMoveUp(task);}}>▲</button>}
@@ -1463,7 +1468,7 @@ function ScoresView({tasks,manualBadges,demerits}){
 }
 
 // ── SETTINGS VIEW ──────────────────────────────────────────────────────────
-function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange,permissions,onPermissionsChange,adminUnlocked,onAdminChange}){
+function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onManualBadges,demerits,onDemerits,showToast,allTeam,customTeam,onAddUser,onRewriteSheet,hours,onHoursChange,permissions,onPermissionsChange,adminUnlocked,onAdminChange,pendingSync,syncLog,tasks,onForceResync,onClearSyncLog}){
   const [draft,setDraft]=useState(settings);
   const [saved,setSaved]=useState(false);
   const [devOpen,setDevOpen]=useState(false);
@@ -1641,6 +1646,37 @@ function SettingsView({settings,onSettings,onSave,onClearTasks,manualBadges,onMa
                 })}
               </div>
             </div>
+            <div className="admin-subsection">
+              <div className="admin-sub-label">Sync Diagnostics</div>
+              <p style={{fontSize:'12px',color:'var(--text2)',fontFamily:'DM Mono,monospace',marginBottom:'12px'}}>What the app knows about its sync state. The pending queue lists tasks whose latest local change hasn't been confirmed in the sheet yet.</p>
+              <div style={{display:'flex',gap:'18px',flexWrap:'wrap',marginBottom:'14px'}}>
+                <div><div style={{fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em',textTransform:'uppercase'}}>Pending</div><div style={{fontSize:'22px',fontWeight:800,color:pendingSync?.size>0?'var(--amber)':'var(--text2)'}}>{pendingSync?.size||0}</div></div>
+                <div><div style={{fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em',textTransform:'uppercase'}}>Log entries</div><div style={{fontSize:'22px',fontWeight:800,color:'var(--text2)'}}>{syncLog?.length||0}</div></div>
+              </div>
+              {pendingSync&&pendingSync.size>0&&<div style={{background:'var(--bg3)',borderRadius:'6px',padding:'10px 14px',marginBottom:'12px',border:'1px solid var(--border)'}}>
+                <div style={{fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:'6px'}}>Pending tasks</div>
+                {[...pendingSync].map(id=>{const t=(tasks||[]).find(x=>x.id===id);return <div key={id} style={{fontSize:'11px',color:'var(--text2)',fontFamily:'DM Mono,monospace',padding:'3px 0'}}>{t?t.title:`(orphaned id: ${id})`}</div>;})}
+              </div>}
+              <div style={{display:'flex',gap:'10px',marginBottom:'14px'}}>
+                <button className="btn-post" style={{fontSize:'12px',padding:'8px 14px'}} onClick={onForceResync}>↻ Force resync pending</button>
+                <button className="btn-cancel" style={{fontSize:'12px'}} onClick={onClearSyncLog}>Clear log</button>
+              </div>
+              {syncLog&&syncLog.length>0&&<div style={{background:'var(--bg3)',borderRadius:'6px',padding:'10px 14px',border:'1px solid var(--border)',maxHeight:'260px',overflowY:'auto'}}>
+                <div style={{fontSize:'10px',color:'var(--text3)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:'8px'}}>Recent events</div>
+                {syncLog.slice(0,30).map((e,i)=>{
+                  const t=(tasks||[]).find(x=>x.id===e.taskId);
+                  const statusColor=e.status.includes('fail')?'#f08080':e.status.includes('confirm')||e.status.includes('append')||e.status.includes('updated')?'#8fce8f':'var(--amber)';
+                  return <div key={i} style={{fontSize:'10px',fontFamily:'DM Mono,monospace',color:'var(--text2)',padding:'3px 0',borderBottom:i<syncLog.length-1?'1px solid var(--border)':'none'}}>
+                    <span style={{color:'var(--text3)'}}>{new Date(e.at).toLocaleTimeString('en-US',{hour12:false})}</span>
+                    {' · '}
+                    <span style={{color:statusColor,fontWeight:700}}>{e.status}</span>
+                    {' · '}
+                    <span>{t?t.title.slice(0,40):e.taskId}</span>
+                    {e.detail&&<span style={{color:'#f08080'}}> · {e.detail}</span>}
+                  </div>;
+                })}
+              </div>}
+            </div>
             <button className="btn-cancel" style={{fontSize:'12px',alignSelf:'flex-start'}} onClick={()=>setAdminUnlocked(false)}>🔒 Lock admin panel</button>
           </div>
         )}
@@ -1691,6 +1727,12 @@ function App(){
   const [hours,setHours]=useState(()=>getSaved(HOURS_KEY)||DEFAULT_HOURS);
   const [permissions,setPermissions]=useState(()=>getSaved(PERMISSIONS_KEY)||{});
   const [adminUnlocked,setAdminUnlocked]=useState(false);
+  // Pending sync queue — task IDs whose latest local change hasn't been confirmed in the sheet yet.
+  const [pendingSync,setPendingSync]=useState(()=>new Set(getSaved(PENDING_SYNC_KEY)||[]));
+  // Recent sync events (success, failed, confirmed). Capped at 50 for diagnostic visibility.
+  const [syncLog,setSyncLog]=useState(()=>getSaved(SYNC_LOG_KEY)||[]);
+  const pendingSyncRef=useRef(pendingSync);
+  useEffect(()=>{pendingSyncRef.current=pendingSync;},[pendingSync]);
   const [manualBadges,setManualBadges]=useState(()=>getSaved(BADGES_KEY)||{});
   const [demerits,setDemerits]=useState(()=>getSaved(DEMERITS_KEY)||[]);
   const [view,setView]=useState('board');
@@ -1801,6 +1843,8 @@ function App(){
   useEffect(()=>{safeStore(COLLAPSED_KEY,collapsed);},[collapsed]);
   useEffect(()=>{safeStore(COLLAPSED_CARDS_KEY,[...collapsedCards]);},[collapsedCards]);
   useEffect(()=>{safeStore(EXPANDED_ROWS_KEY,[...expandedRows]);},[expandedRows]);
+  useEffect(()=>{safeStore(PENDING_SYNC_KEY,[...pendingSync]);},[pendingSync]);
+  useEffect(()=>{safeStore(SYNC_LOG_KEY,syncLog);},[syncLog]);
   useEffect(()=>{const h=document.documentElement;THEMES.forEach(t=>h.classList.remove(t.id));h.classList.add(settings.theme||'theme-foundry');},[settings.theme]);
 
   // ── Try to restore session from stored token ──
@@ -1886,20 +1930,32 @@ function App(){
   },[config?.tokenExpiry]);
   const showToast=(msg,type='')=>setToast({msg,type});
 
+  const logSync=(taskId,status,detail)=>{
+    setSyncLog(prev=>[{taskId,status,detail:detail||null,at:Date.now()},...prev].slice(0,50));
+  };
+
   const syncTask=async(task,isNew=false)=>{
-    if(!configRef.current?.accessToken||!configRef.current?.sheetId)return;
+    if(!configRef.current?.accessToken||!configRef.current?.sheetId)return false;
     setSyncing(true);
-    let ok=false;
+    // Mark as pending immediately — survives reloads, gets verified on every refresh.
+    setPendingSync(prev=>{const n=new Set(prev);n.add(task.id);return n;});
+    let ok=false,lastErr='';
     for(let i=0;i<3&&!ok;i++){
       try{
         if(i>0)await new Promise(r=>setTimeout(r,i*1500));
         isNew?await sheetAppend(configRef.current,task):await sheetUpdate(configRef.current,task);
         ok=true;
       }catch(e){
-        if(i===2)showToast('Sync failed — task saved locally ⚠️','error');
+        lastErr=e?.message||String(e);
+        if(i===2){showToast('Sync failed — will keep retrying','error');logSync(task.id,'failed',lastErr);}
       }
     }
+    if(ok){
+      setPendingSync(prev=>{const n=new Set(prev);n.delete(task.id);return n;});
+      logSync(task.id,isNew?'appended':'updated');
+    }
     setSyncing(false);
+    return ok;
   };
 
   const handleNewTask=async task=>{
@@ -1930,6 +1986,28 @@ function App(){
     showToast(isFirstStart?'Timer started ⏱':'Resumed ▶','success');
     await syncTask(updated.find(t=>t.id===task.id));
   };
+
+  // Force a retry of every task currently in the pending sync queue.
+  const handleForceResync=async()=>{
+    if(!configRef.current?.accessToken){showToast('Not signed in — cannot sync','error');return;}
+    const ids=[...pendingSyncRef.current];
+    if(!ids.length){showToast('Nothing pending — all synced ✓','success');return;}
+    showToast(`Retrying ${ids.length} pending tasks...`,'');
+    for(const id of ids){
+      const t=tasksRef.current.find(x=>x.id===id);
+      if(!t){setPendingSync(prev=>{const n=new Set(prev);n.delete(id);return n;});continue;}
+      logSync(id,'force-retry');
+      try{
+        await sheetAppend(configRef.current,t);
+        setPendingSync(prev=>{const n=new Set(prev);n.delete(id);return n;});
+        logSync(id,'force-appended');
+      }catch(e){
+        logSync(id,'force-failed',e?.message||'');
+      }
+    }
+    showToast('Force-resync complete','success');
+  };
+  const handleClearSyncLog=()=>setSyncLog([]);
 
   // Admin-only: edit a single field on a task (used by the History view for fixing "Completed by")
   const handleHistoryUpdate=async(taskId,field,value)=>{
@@ -2087,10 +2165,41 @@ function App(){
           if(!extras.length)return sheetT.comments||[];
           return [...(sheetT.comments||[]),...extras].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
         };
-        // Compute orphans BEFORE setTasks — can't rely on side effects inside React 18 updaters.
-        const sheetMap=new Map(sheetTasks.filter(t=>!effectiveDeleted.has(t.id)).map(t=>[t.id,t]));
+        const sheetIdSet=new Set(sheetTasks.map(t=>t.id));
         const localCurrent=tasksRef.current||[];
-        const orphans=localCurrent.filter(t=>!sheetMap.has(t.id)&&!effectiveDeleted.has(t.id)&&t.createdAt&&(Date.now()-t.createdAt)<24*3600*1000);
+        // ─── PENDING SYNC RECONCILIATION ───
+        // Anything in our pending queue that's now in the sheet → confirmed, remove from queue.
+        // Anything in our pending queue that's STILL not in the sheet → retry the append.
+        const toConfirm=[];
+        const toRetry=[];
+        for(const id of pendingSyncRef.current){
+          if(sheetIdSet.has(id)){
+            toConfirm.push(id);
+          }else{
+            const t=localCurrent.find(x=>x.id===id);
+            if(t&&!effectiveDeleted.has(id))toRetry.push(t);
+            else toConfirm.push(id); // gone locally or marked deleted — drop from queue
+          }
+        }
+        // Also catch ORPHANS that aren't in the pending queue (legacy or cross-device).
+        // Any local task created recently that's not in sheet → treat as pending retry.
+        const recentOrphans=localCurrent.filter(t=>
+          !sheetIdSet.has(t.id)&&
+          !effectiveDeleted.has(t.id)&&
+          !pendingSyncRef.current.has(t.id)&&
+          t.createdAt&&(Date.now()-t.createdAt)<24*3600*1000
+        );
+        if(toConfirm.length){
+          setPendingSync(prev=>{const n=new Set(prev);for(const id of toConfirm)n.delete(id);return n;});
+          for(const id of toConfirm)logSync(id,'confirmed-via-poll');
+        }
+        if(toRetry.length){
+          setPendingSync(prev=>{const n=new Set(prev);for(const t of toRetry)n.add(t.id);return n;});
+        }
+        if(recentOrphans.length){
+          setPendingSync(prev=>{const n=new Set(prev);for(const t of recentOrphans)n.add(t.id);return n;});
+        }
+        // Do the task merge.
         setTasks(local=>{
           const visible=sheetTasks.filter(t=>!effectiveDeleted.has(t.id));
           const sheetMapInner=new Map(visible.map(t=>[t.id,t]));
@@ -2104,10 +2213,17 @@ function App(){
           });
           return[...merged,...localOnly];
         });
-        // Retry sync for orphaned tasks — they were created locally but never made it to the sheet.
-        if(cfg?.accessToken&&orphans.length>0){
-          for(const t of orphans){
-            sheetAppend(cfg,t).catch(()=>{/* will retry on next refresh */});
+        // Fire the retries (don't await — they update pendingSync via syncTask).
+        const allRetries=[...toRetry,...recentOrphans];
+        if(cfg?.accessToken&&allRetries.length>0){
+          for(const t of allRetries){
+            logSync(t.id,'retry-poll');
+            sheetAppend(cfg,t).then(()=>{
+              setPendingSync(prev=>{const n=new Set(prev);n.delete(t.id);return n;});
+              logSync(t.id,'retry-appended');
+            }).catch(e=>{
+              logSync(t.id,'retry-failed',e?.message||'');
+            });
           }
         }
         setCommentTask(prev=>{
@@ -2116,7 +2232,7 @@ function App(){
           if(!sheetVer)return prev;
           return{...sheetVer,comments:unionComments(prev,sheetVer)};
         });
-        if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks${orphans.length?` (+${orphans.length} re-syncing)`:''}`,'success');
+        if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks${allRetries.length?` (+${allRetries.length} re-syncing)`:''}`,'success');
       }else{
         if(!silent)showToast('Sheet appears empty — keeping local data','');
       }
@@ -2283,7 +2399,7 @@ function App(){
     if(sortBy!=='manual')setSortByRaw('manual');
   };
 
-  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),onToggleChecklist:handleToggleChecklist,onToggleCollapse:toggleCardCollapse,onToggleExpand:toggleRowExpand,fontSize:settings.fontSize||14,allCats:managedCats};
+  const cardProps={onAccept:handleAccept,onComplete:handleComplete,onPause:handlePause,onResume:handleResume,onDelete:handleDelete,onComment:setCommentTask,onEdit:setEditTask,onMoveUp:t=>moveTask(t,'up'),onMoveDown:t=>moveTask(t,'down'),onToggleChecklist:handleToggleChecklist,onToggleCollapse:toggleCardCollapse,onToggleExpand:toggleRowExpand,pendingSync,fontSize:settings.fontSize||14,allCats:managedCats};
 
   if(restoring||(!user&&config?.accessToken))return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={true}/></div>;
   if(!user)return <div className={settings.theme||'theme-foundry'}><AuthScreen onSignIn={handleSignIn} restoring={false}/></div>;
@@ -2442,7 +2558,7 @@ function App(){
 
       {view==='log'&&<div style={{flex:1,overflowY:'auto'}}><LogView tasks={tasks} config={config} adminUnlocked={adminUnlocked} allTeam={allTeam} onUpdate={handleHistoryUpdate}/></div>}
       {view==='scores'&&<div style={{flex:1,overflowY:'auto'}}><ScoresView tasks={tasks} manualBadges={manualBadges} demerits={demerits}/></div>}
-      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange} permissions={permissions} onPermissionsChange={handlePermissionsChange} adminUnlocked={adminUnlocked} onAdminChange={setAdminUnlocked}/></div>}
+      {view==='settings'&&<div style={{flex:1,overflowY:'auto'}}><SettingsView settings={settings} onSettings={setSettings} onSave={s=>{setSettings(s);showToast('Settings saved ✓','success');}} onClearTasks={handleClearTasks} manualBadges={manualBadges} onManualBadges={setManualBadges} demerits={demerits} onDemerits={setDemerits} showToast={showToast} allTeam={allTeam} customTeam={customTeam} onAddUser={handleAddUser} onRewriteSheet={handleSheetRewrite} hours={hours} onHoursChange={handleHoursChange} permissions={permissions} onPermissionsChange={handlePermissionsChange} adminUnlocked={adminUnlocked} onAdminChange={setAdminUnlocked} pendingSync={pendingSync} syncLog={syncLog} tasks={tasks} onForceResync={handleForceResync} onClearSyncLog={handleClearSyncLog}/></div>}
 
       {/* MOBILE NAV */}
       <nav className="mobile-nav">
