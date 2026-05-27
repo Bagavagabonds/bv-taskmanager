@@ -2087,14 +2087,14 @@ function App(){
           if(!extras.length)return sheetT.comments||[];
           return [...(sheetT.comments||[]),...extras].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
         };
-        let orphans=[];
+        // Compute orphans BEFORE setTasks — can't rely on side effects inside React 18 updaters.
+        const sheetMap=new Map(sheetTasks.filter(t=>!effectiveDeleted.has(t.id)).map(t=>[t.id,t]));
+        const localCurrent=tasksRef.current||[];
+        const orphans=localCurrent.filter(t=>!sheetMap.has(t.id)&&!effectiveDeleted.has(t.id)&&t.createdAt&&(Date.now()-t.createdAt)<24*3600*1000);
         setTasks(local=>{
           const visible=sheetTasks.filter(t=>!effectiveDeleted.has(t.id));
-          const sheetMap=new Map(visible.map(t=>[t.id,t]));
-          const localOnly=local.filter(t=>!sheetMap.has(t.id)&&!effectiveDeleted.has(t.id));
-          // Anything in local but not in the sheet (and not deleted) is a sync orphan — push it back.
-          // Cap to recent tasks (24h) to avoid resurrecting ancient stragglers.
-          orphans=localOnly.filter(t=>t.createdAt&&(Date.now()-t.createdAt)<24*3600*1000);
+          const sheetMapInner=new Map(visible.map(t=>[t.id,t]));
+          const localOnly=local.filter(t=>!sheetMapInner.has(t.id)&&!effectiveDeleted.has(t.id));
           const merged=visible.map(st=>{
             const lt=local.find(t=>t.id===st.id);
             if(!lt)return st;
