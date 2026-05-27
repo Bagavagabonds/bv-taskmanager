@@ -2071,20 +2071,30 @@ function App(){
     if(!cfg?.accessToken||!cfg?.sheetId)return;
     if(!silent)setRefreshing(true);
     try{
-      const sheetTasks=await sheetLoad(cfg);
+      // Fetch sheet + config in parallel so we have the latest deletedIds BEFORE doing the merge.
+      // Previously the merge ran with stale local deletedIds, which let ghosts slip through.
+      const [sheetTasks,appCfg]=await Promise.all([
+        sheetLoad(cfg),
+        loadAppConfig(cfg).catch(()=>({})),
+      ]);
+      const sheetDeleted=(!pushingDeletedRef.current&&Array.isArray(appCfg.deletedIds))?appCfg.deletedIds:[];
+      // Build the authoritative deletedIds set for THIS refresh — union of local + sheet's set.
+      const effectiveDeleted=new Set([...deletedIdsRef.current,...sheetDeleted]);
       if(sheetTasks.length>0){
-        // Union of comments by ID — preserves local optimistic comments
         const unionComments=(localT,sheetT)=>{
           const sheetIds=new Set((sheetT.comments||[]).map(c=>c.id));
           const extras=(localT.comments||[]).filter(c=>!sheetIds.has(c.id));
           if(!extras.length)return sheetT.comments||[];
           return [...(sheetT.comments||[]),...extras].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
         };
+        let orphans=[];
         setTasks(local=>{
-          const deleted=deletedIdsRef.current;
-          const visible=sheetTasks.filter(t=>!deleted.has(t.id));
+          const visible=sheetTasks.filter(t=>!effectiveDeleted.has(t.id));
           const sheetMap=new Map(visible.map(t=>[t.id,t]));
-          const localOnly=local.filter(t=>!sheetMap.has(t.id)&&!deleted.has(t.id));
+          const localOnly=local.filter(t=>!sheetMap.has(t.id)&&!effectiveDeleted.has(t.id));
+          // Anything in local but not in the sheet (and not deleted) is a sync orphan — push it back.
+          // Cap to recent tasks (24h) to avoid resurrecting ancient stragglers.
+          orphans=localOnly.filter(t=>t.createdAt&&(Date.now()-t.createdAt)<24*3600*1000);
           const merged=visible.map(st=>{
             const lt=local.find(t=>t.id===st.id);
             if(!lt)return st;
@@ -2094,43 +2104,45 @@ function App(){
           });
           return[...merged,...localOnly];
         });
-        // Keep comment drawer current — union local + sheet comments to avoid flicker
+        // Retry sync for orphaned tasks — they were created locally but never made it to the sheet.
+        if(cfg?.accessToken&&orphans.length>0){
+          for(const t of orphans){
+            sheetAppend(cfg,t).catch(()=>{/* will retry on next refresh */});
+          }
+        }
         setCommentTask(prev=>{
           if(!prev)return null;
           const sheetVer=sheetTasks.find(t=>t.id===prev.id);
           if(!sheetVer)return prev;
           return{...sheetVer,comments:unionComments(prev,sheetVer)};
         });
-        if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks`,'success');
+        if(!silent)showToast(`Refreshed — ${sheetTasks.length} tasks${orphans.length?` (+${orphans.length} re-syncing)`:''}`,'success');
       }else{
         if(!silent)showToast('Sheet appears empty — keeping local data','');
       }
-      // Pull shared app-config (hours, permissions) — skip portions mid-push, no-op if unchanged
-      try{
-        const appCfg=await loadAppConfig(cfg);
-        if(!pushingHoursRef.current&&appCfg.hours&&typeof appCfg.hours==='object'){
-          setHours(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.hours)?prev:appCfg.hours);
-        }
-        if(!pushingPermsRef.current&&appCfg.permissions&&typeof appCfg.permissions==='object'){
-          setPermissions(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.permissions)?prev:appCfg.permissions);
-        }
-        if(!pushingClientsRef.current&&Array.isArray(appCfg.clients)){
-          setManagedClients(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.clients)?prev:appCfg.clients);
-        }
-        if(!pushingCatsRef.current&&Array.isArray(appCfg.cats)){
-          setManagedCats(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.cats)?prev:appCfg.cats);
-        }
-        if(!pushingProjectsRef.current&&appCfg.projects&&typeof appCfg.projects==='object'){
-          setProjects(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.projects)?prev:appCfg.projects);
-        }
-        if(!pushingDeletedRef.current&&Array.isArray(appCfg.deletedIds)){
-          setDeletedIds(prev=>{
-            let changed=false;const merged=new Set(prev);
-            for(const id of appCfg.deletedIds){if(!merged.has(id)){merged.add(id);changed=true;}}
-            return changed?merged:prev;
-          });
-        }
-      }catch(e){/* ignore */}
+      // Apply config updates AFTER tasks have been merged with the proper deletedIds.
+      if(!pushingHoursRef.current&&appCfg.hours&&typeof appCfg.hours==='object'){
+        setHours(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.hours)?prev:appCfg.hours);
+      }
+      if(!pushingPermsRef.current&&appCfg.permissions&&typeof appCfg.permissions==='object'){
+        setPermissions(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.permissions)?prev:appCfg.permissions);
+      }
+      if(!pushingClientsRef.current&&Array.isArray(appCfg.clients)){
+        setManagedClients(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.clients)?prev:appCfg.clients);
+      }
+      if(!pushingCatsRef.current&&Array.isArray(appCfg.cats)){
+        setManagedCats(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.cats)?prev:appCfg.cats);
+      }
+      if(!pushingProjectsRef.current&&appCfg.projects&&typeof appCfg.projects==='object'){
+        setProjects(prev=>JSON.stringify(prev)===JSON.stringify(appCfg.projects)?prev:appCfg.projects);
+      }
+      if(sheetDeleted.length>0){
+        setDeletedIds(prev=>{
+          let changed=false;const merged=new Set(prev);
+          for(const id of sheetDeleted){if(!merged.has(id)){merged.add(id);changed=true;}}
+          return changed?merged:prev;
+        });
+      }
     }catch{if(!silent)showToast('Refresh failed','error');}
     if(!silent)setRefreshing(false);
   };
