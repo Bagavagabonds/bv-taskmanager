@@ -727,8 +727,22 @@ function taskRow(task){
   return[task.id,task.title,task.desc||'',task.category,task.priority,clientDisplay,task.deadline||'',task.createdBy,task.assignedTo||'',fmtTime(task.createdAt),fmtTime(task.acceptedAt),fmtTime(task.completedAt),task.duration?fmtDur(task.duration):'',task.points||'',currentMonth(),JSON.stringify(task)];
 }
 async function sheetAppend(cfg,task){
+  // PREVIOUSLY this used the Sheets `:append` API with range `A:P`. Google's auto-table-detection
+  // would sometimes find a "table" starting at columns beyond A (especially if past writes spilled
+  // into columns Q–AD from old schemas). New appends would then land in the wrong columns,
+  // invisible to sheetLoad. Catastrophic.
+  // DETERMINISTIC FIX: find the highest row that has a value in column A, then PUT to row+1 at A:P.
+  // No more guessing — the target row and columns are explicit.
   await ensureHeaders(cfg);
-  await sheetsReq(cfg,'POST','/values/Tasks!A:P:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{values:[taskRow(task)]});
+  const d=await sheetsReq(cfg,'GET','/values/Tasks!A:A');
+  let maxRow=1;
+  if(d.values){
+    for(let i=0;i<d.values.length;i++){
+      if(d.values[i]&&d.values[i][0])maxRow=i+1;
+    }
+  }
+  const nextRow=maxRow+1;
+  await sheetsReq(cfg,'PUT',`/values/Tasks!A${nextRow}:P${nextRow}?valueInputOption=RAW`,{values:[taskRow(task)]});
 }
 async function sheetUpdate(cfg,task){
   try{
@@ -752,7 +766,9 @@ async function sheetClearRow(cfg,taskId){
 }
 async function sheetRewrite(cfg,tasks){
   await ensureHeaders(cfg);
-  await sheetsReq(cfg,'POST','/values/Tasks!A2:P10000:clear',{});
+  // Clear a WIDE range (A:AZ) — past versions sometimes wrote into columns Q-AD due to the
+  // Sheets `:append` column-drift bug. Clearing only A:P would leave that stray data intact.
+  await sheetsReq(cfg,'POST','/values/Tasks!A2:AZ10000:clear',{});
   const statusOrder=t=>t.completedAt?2:t.acceptedAt?1:0;
   const sorted=[...tasks].sort((a,b)=>statusOrder(a)-statusOrder(b)||(b.createdAt||0)-(a.createdAt||0));
   if(!sorted.length)return;
