@@ -779,12 +779,24 @@ async function sheetLoad(cfg){
     const d=await sheetsReq(cfg,'GET','/values/Tasks!A:P');
     if(!d.values||d.values.length<2)return[];
     const rows=d.values.slice(1);
+    // Dedup by task ID — keep FIRST occurrence. sheetUpdate always finds and updates the first
+    // matching row, so the first occurrence is the canonical (updated) version. Later duplicate
+    // rows are stale leftovers from race conditions (poll-triggered retry firing while the
+    // original sheetAppend was still in flight). Keeping first prevents visual flicker.
+    const seen=new Set();
     const tasks=[];
     for(const row of rows){
-      if(row[15]){try{tasks.push(JSON.parse(row[15]));continue;}catch(e){}}
-      if(row[0]){tasks.push({id:row[0],title:row[1]||'',desc:row[2]||'',category:row[3]||'other',priority:row[4]||'med',client:row[5]||'',deadline:row[6]||'',createdBy:row[7]||'',assignedTo:row[8]||'',createdAt:row[9]?new Date(row[9]).getTime()||Date.now():Date.now(),acceptedAt:row[10]?new Date(row[10]).getTime()||null:null,completedAt:row[11]?new Date(row[11]).getTime()||null:null,duration:null,pausedAt:null,accumulatedMs:0,points:row[13]?parseInt(row[13])||null:null,comments:[]});}
+      let task=null;
+      if(row[15]){try{task=JSON.parse(row[15]);}catch(e){}}
+      if(!task&&row[0]){
+        task={id:row[0],title:row[1]||'',desc:row[2]||'',category:row[3]||'other',priority:row[4]||'med',client:row[5]||'',deadline:row[6]||'',createdBy:row[7]||'',assignedTo:row[8]||'',createdAt:row[9]?new Date(row[9]).getTime()||Date.now():Date.now(),acceptedAt:row[10]?new Date(row[10]).getTime()||null:null,completedAt:row[11]?new Date(row[11]).getTime()||null:null,duration:null,pausedAt:null,accumulatedMs:0,points:row[13]?parseInt(row[13])||null:null,comments:[]};
+      }
+      if(task&&task.id&&!seen.has(task.id)){
+        seen.add(task.id);
+        tasks.push(task);
+      }
     }
-    return tasks.filter(t=>t.id);
+    return tasks;
   }catch(e){console.warn('sheet load error',e);return[];}
 }
 // ── APP CONFIG (small key/value sheet for shared app state like hours) ──
@@ -1749,6 +1761,9 @@ function App(){
   const [syncLog,setSyncLog]=useState(()=>getSaved(SYNC_LOG_KEY)||[]);
   const pendingSyncRef=useRef(pendingSync);
   useEffect(()=>{pendingSyncRef.current=pendingSync;},[pendingSync]);
+  // In-flight = a syncTask call is mid-flight RIGHT NOW for this task ID. Used to suppress
+  // poll-triggered retries that would otherwise double-append the same task. Ephemeral — not persisted.
+  const inFlightSyncRef=useRef(new Set());
   const [manualBadges,setManualBadges]=useState(()=>getSaved(BADGES_KEY)||{});
   const [demerits,setDemerits]=useState(()=>getSaved(DEMERITS_KEY)||[]);
   const [view,setView]=useState('board');
@@ -1953,6 +1968,7 @@ function App(){
   const syncTask=async(task,isNew=false)=>{
     if(!configRef.current?.accessToken||!configRef.current?.sheetId)return false;
     setSyncing(true);
+    inFlightSyncRef.current.add(task.id);
     // Mark as pending immediately — survives reloads, gets verified on every refresh.
     setPendingSync(prev=>{const n=new Set(prev);n.add(task.id);return n;});
     let ok=false,lastErr='';
@@ -1970,6 +1986,7 @@ function App(){
       setPendingSync(prev=>{const n=new Set(prev);n.delete(task.id);return n;});
       logSync(task.id,isNew?'appended':'updated');
     }
+    inFlightSyncRef.current.delete(task.id);
     setSyncing(false);
     return ok;
   };
@@ -2189,6 +2206,8 @@ function App(){
         const toConfirm=[];
         const toRetry=[];
         for(const id of pendingSyncRef.current){
+          // Skip tasks whose syncTask is currently mid-flight — don't double-append.
+          if(inFlightSyncRef.current.has(id))continue;
           if(sheetIdSet.has(id)){
             toConfirm.push(id);
           }else{
@@ -2199,10 +2218,12 @@ function App(){
         }
         // Also catch ORPHANS that aren't in the pending queue (legacy or cross-device).
         // Any local task created recently that's not in sheet → treat as pending retry.
+        // Same in-flight guard as above.
         const recentOrphans=localCurrent.filter(t=>
           !sheetIdSet.has(t.id)&&
           !effectiveDeleted.has(t.id)&&
           !pendingSyncRef.current.has(t.id)&&
+          !inFlightSyncRef.current.has(t.id)&&
           t.createdAt&&(Date.now()-t.createdAt)<24*3600*1000
         );
         if(toConfirm.length){
