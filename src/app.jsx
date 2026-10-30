@@ -45,8 +45,6 @@ function userCanAssignOthers(perms,email){ if(!email||!perms)return true; const 
 function isCrew(email){ return !!email&&(email.toLowerCase()===ADMIN_EMAIL||TEAM.some(t=>t.email.toLowerCase()===email.toLowerCase())); }
 // Email recipients come from TEAM (never raw task/sheet data, which any sheet editor can change); null if not crew.
 function crewEmail(email){ const e=String(email||'').trim().toLowerCase(); const m=e&&TEAM.find(t=>t.email.toLowerCase()===e); return m?m.email:null; }
-// Header values: strip CR/LF so text like a task title can't inject extra headers (e.g. Bcc).
-function oneLine(s){ return String(s??'').replace(/[\r\n]+/g,' '); }
 
 // ── SAFE STORAGE ── (handles quota errors / iOS private mode)
 let __storageWarned = false;
@@ -71,6 +69,7 @@ const NOTE_COLOR_OPTIONS = [
 const HARDCODED_CONFIG = {
   clientId: '630423801494-aetvklr9sjscvscpe4tlcrlpuh5j7ccm.apps.googleusercontent.com',
   sheetId:  '1g4z73WCjXA2vC-YIh-GVA94S49cm40rqmQFJaQI_l-M',
+  apiUrl:   API_URL, // set by build.mjs (backend/DEPLOY.md)
 };
 
 // Crew list lives in the sheet's Config tab (key "team"), loaded after sign-in, so names/emails stay out of this public repo.
@@ -228,177 +227,26 @@ function playSound(type){
 }
 
 // ── SHEETS ─────────────────────────────────────────────────────────────────
-async function sheetsReq(cfg,method,path,body=null){
-  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}${path}`,{method,headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
-  if(!r.ok){
-    if(r.status===401||r.status===403)window.dispatchEvent(new CustomEvent('bvb-auth-expired'));
-    throw new Error(`Sheets ${r.status}`);
+// ── BACKEND ── Apps Script web app (backend/Code.gs). The phone's token only proves who you are; the script
+// checks the crew list, does every sheet write under a lock and sends the emails. Plain-text body = no CORS preflight.
+async function api(cfg,action,payload){
+  const r=await fetch(cfg.apiUrl,{method:'POST',body:JSON.stringify({action,payload,token:cfg.accessToken})});
+  const d=await r.json().catch(()=>({ok:false,code:r.status,error:'bad response'}));
+  if(!d.ok){
+    if(d.code===401)window.dispatchEvent(new CustomEvent('bvb-auth-expired'));
+    const e=new Error(d.error||`API ${d.code}`);e.code=d.code;throw e;
   }
-  return r.json();
+  return d.data;
 }
-async function ensureHeaders(cfg){
-  try{const d=await sheetsReq(cfg,'GET','/values/Tasks!A1:P1');if(d.values?.[0]?.[0]==='Task ID')return;}catch(e){}
-  await sheetsReq(cfg,'PUT','/values/Tasks!A1:P1?valueInputOption=RAW',{values:[['Task ID','Title','Description','Category','Priority','Client','Deadline','Requested By','Assigned To','Created At','Accepted At','Completed At','Duration','Points','Month','_json']]});
-}
-function taskRow(task){
-  const clientDisplay=[task.client||'',task.project||''].filter(Boolean).join(' · ');
-  return[task.id,task.title,task.desc||'',task.category,task.priority,clientDisplay,task.deadline||'',task.createdBy,task.assignedTo||'',fmtTime(task.createdAt),fmtTime(task.acceptedAt),fmtTime(task.completedAt),task.duration?fmtDur(task.duration):'',task.points||'',currentMonth(),JSON.stringify(task)];
-}
-async function sheetAppend(cfg,task){
-  // PREVIOUSLY this used the Sheets `:append` API with range `A:P`. Google's auto-table-detection
-  // would sometimes find a "table" starting at columns beyond A (especially if past writes spilled
-  // into columns Q–AD from old schemas). New appends would then land in the wrong columns,
-  // invisible to sheetLoad. Catastrophic.
-  // DETERMINISTIC FIX: find the highest row that has a value in column A, then PUT to row+1 at A:P.
-  // No more guessing — the target row and columns are explicit.
-  await ensureHeaders(cfg);
-  const d=await sheetsReq(cfg,'GET','/values/Tasks!A:A');
-  let maxRow=1;
-  if(d.values){
-    for(let i=0;i<d.values.length;i++){
-      if(d.values[i]&&d.values[i][0])maxRow=i+1;
-    }
-  }
-  const nextRow=maxRow+1;
-  await sheetsReq(cfg,'PUT',`/values/Tasks!A${nextRow}:P${nextRow}?valueInputOption=RAW`,{values:[taskRow(task)]});
-}
-async function sheetUpdate(cfg,task){
-  try{
-    const d=await sheetsReq(cfg,'GET','/values/Tasks!A:A');
-    if(!d.values)return;
-    const i=d.values.findIndex(r=>r[0]===task.id);
-    if(i<1)return; // row not found — skip, never duplicate via update path
-    const row=i+1;
-    await sheetsReq(cfg,'PUT',`/values/Tasks!A${row}:P${row}?valueInputOption=RAW`,{values:[taskRow(task)]});
-  }catch(e){console.warn('sheet update',e);}
-}
-async function sheetClearRow(cfg,taskId){
-  try{
-    const d=await sheetsReq(cfg,'GET','/values/Tasks!A:A');
-    if(!d.values)return;
-    const i=d.values.findIndex(r=>r[0]===taskId);
-    if(i<1)return; // not found or header row — nothing to clear
-    const row=i+1;
-    await sheetsReq(cfg,'POST',`/values/Tasks!A${row}:P${row}:clear`,{});
-  }catch(e){console.warn('sheet clear',e);}
-}
-// Safe rewrite: backup tab first, rows come from the SHEET (never a possibly-stale device),
-// write before clearing so no failure point leaves the sheet empty. Returns {count,backup}.
-async function sheetRewrite(cfg){
-  await ensureHeaders(cfg);
-  const meta=await sheetsReq(cfg,'GET','?fields=sheets.properties(sheetId,title)');
-  const src=meta.sheets?.find(s=>s.properties.title==='Tasks');
-  if(!src)throw new Error('Tasks tab not found');
-  const d=new Date(),p=n=>String(n).padStart(2,'0');
-  const backup=`Tasks backup ${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-  await sheetsReq(cfg,'POST',':batchUpdate',{requests:[{duplicateSheet:{sourceSheetId:src.properties.sheetId,newSheetName:backup,insertSheetIndex:meta.sheets.length}}]});
-  const tasks=await sheetLoad(cfg); // also de-dups by id
-  if(!tasks.length)throw new Error('Sheet read came back empty');
-  const statusOrder=t=>t.completedAt?2:t.acceptedAt?1:0;
-  const sorted=[...tasks].sort((a,b)=>statusOrder(a)-statusOrder(b)||(b.createdAt||0)-(a.createdAt||0));
-  const last=sorted.length+1;
-  await sheetsReq(cfg,'PUT',`/values/Tasks!A2:P${last}?valueInputOption=RAW`,{values:sorted.map(taskRow)});
-  // Clear leftovers: rows below the data, plus stray Q:AZ cells from the old `:append` column-drift bug.
-  await sheetsReq(cfg,'POST','/values:batchClear',{ranges:[`Tasks!A${last+1}:AZ10000`,`Tasks!Q2:AZ${last}`]});
-  return{count:sorted.length,backup};
-}
-async function sheetLoad(cfg){
-  try{
-    const d=await sheetsReq(cfg,'GET','/values/Tasks!A:P');
-    if(!d.values||d.values.length<2)return[];
-    const rows=d.values.slice(1);
-    // Dedup by task ID — keep FIRST occurrence. sheetUpdate always finds and updates the first
-    // matching row, so the first occurrence is the canonical (updated) version. Later duplicate
-    // rows are stale leftovers from race conditions (poll-triggered retry firing while the
-    // original sheetAppend was still in flight). Keeping first prevents visual flicker.
-    const seen=new Set();
-    const tasks=[];
-    for(const row of rows){
-      let task=null;
-      if(row[15]){try{task=JSON.parse(row[15]);}catch(e){}}
-      if(!task&&row[0]){
-        task={id:row[0],title:row[1]||'',desc:row[2]||'',category:row[3]||'other',priority:row[4]||'med',client:row[5]||'',deadline:row[6]||'',createdBy:row[7]||'',assignedTo:row[8]||'',createdAt:row[9]?new Date(row[9]).getTime()||Date.now():Date.now(),acceptedAt:row[10]?new Date(row[10]).getTime()||null:null,completedAt:row[11]?new Date(row[11]).getTime()||null:null,duration:null,pausedAt:null,accumulatedMs:0,points:row[13]?parseInt(row[13])||null:null,comments:[]};
-      }
-      if(task&&task.id&&!seen.has(task.id)){
-        seen.add(task.id);
-        tasks.push(task);
-      }
-    }
-    return tasks;
-  }catch(e){console.warn('sheet load error',e);return[];}
-}
-// ── APP CONFIG (small key/value sheet for shared app state like hours) ──
-async function ensureConfigSheet(cfg){
-  try{
-    const d=await sheetsReq(cfg,'GET','/values/Config!A1:B1');
-    if(d.values?.[0]?.[0]==='key')return true;
-  }catch(e){
-    // Sheet tab probably missing — try to create it
-    try{ await sheetsReq(cfg,'POST',':batchUpdate',{requests:[{addSheet:{properties:{title:'Config'}}}]}); }
-    catch(e2){ /* already exists or other error — fall through */ }
-  }
-  try{ await sheetsReq(cfg,'PUT','/values/Config!A1:B1?valueInputOption=RAW',{values:[['key','value']]}); return true; }
-  catch(e){ return false; }
-}
-async function loadAppConfig(cfg){
-  try{
-    await ensureConfigSheet(cfg);
-    const d=await sheetsReq(cfg,'GET','/values/Config!A:B');
-    if(!d.values)return{};
-    const out={};
-    for(const row of d.values.slice(1)){
-      if(row[0]&&row[1]!=null){
-        try{ out[row[0]]=JSON.parse(row[1]); }
-        catch{ out[row[0]]=row[1]; }
-      }
-    }
-    return out;
-  }catch(e){ console.warn('config load',e); return{}; }
-}
-// Crew check: null = this account can't read the sheet (403/404), else the Config "team" list ([] if missing). Throws on other errors.
+// Upsert by id on the server, so a retry can never duplicate a row.
+const sheetSave=(cfg,task)=>api(cfg,'saveTask',{task});
+const sheetLoad=async cfg=>(await api(cfg,'load')).tasks;
+const sheetRewrite=cfg=>api(cfg,'rewrite');
+const saveAppConfigKey=(cfg,key,value)=>api(cfg,'setConfig',{key,value});
+// Crew check: null = not on the crew list (server 403). Throws on other errors.
 async function loadTeam(cfg){
-  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}/values/Config!A:B`,{headers:{'Authorization':`Bearer ${cfg.accessToken}`}});
-  if(r.status===403||r.status===404)return null;
-  if(!r.ok)throw new Error(`Sheets ${r.status}`);
-  const row=((await r.json()).values||[]).find(x=>x[0]==='team');
-  try{ return parseTeam(row&&JSON.parse(row[1]))||[]; }catch(e){ return[]; }
-}
-async function saveAppConfigKey(cfg,key,value){
-  await ensureConfigSheet(cfg);
-  const d=await sheetsReq(cfg,'GET','/values/Config!A:A');
-  const rowIdx=d.values?d.values.findIndex(r=>r[0]===key):-1;
-  const val=typeof value==='string'?value:JSON.stringify(value);
-  if(rowIdx>0){
-    await sheetsReq(cfg,'PUT',`/values/Config!A${rowIdx+1}:B${rowIdx+1}?valueInputOption=RAW`,{values:[[key,val]]});
-  }else{
-    await sheetsReq(cfg,'POST','/values/Config!A:B:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{values:[[key,val]]});
-  }
-}
-
-async function sendEmail(cfg,task){
-  const to=crewEmail(task.assignedToEmail);
-  if(!cfg.accessToken||!to)return;
-  try{
-    const sub=oneLine(`[BV Tasks] New task: ${task.title}`);
-    const body=`Hi ${task.assignedTo||'there'},\n\nNew task on the Bagavagabonds board:\n\nTitle: ${task.title}\nClient: ${task.client||'General'}\nCategory: ${task.category}\nPriority: ${task.priority.toUpperCase()}${task.deadline?`\nDeadline: ${task.deadline}`:''}\n${task.desc?`\nDetails: ${task.desc}\n`:''}\nRequested by: ${task.createdBy}\n\nhttps://bagavagabonds.github.io/bv-taskmanager/\n\n— Bagavagabonds Task Board`;
-    const raw=[`To: ${to}`,`Subject: ${sub}`,'Content-Type: text/plain; charset=utf-8','',body].join('\n');
-    const enc=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-    await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({raw:enc})});
-  }catch(e){console.warn('email',e);}
-}
-async function sendCompletionEmail(cfg,task,completedByName,completedByEmail){
-  const to=crewEmail(task.createdByEmail);
-  if(!cfg.accessToken||!to)return;
-  // Don't email the creator if they completed it themselves
-  if(completedByEmail&&to.toLowerCase()===completedByEmail.toLowerCase())return;
-  try{
-    const sub=oneLine(`[BV Tasks] Completed: ${task.title}`);
-    const dur=task.duration?fmtDur(task.duration):'—';
-    const body=`Hi ${task.createdBy||'there'},\n\nYour task has been completed.\n\nTitle: ${task.title}\nCompleted by: ${completedByName||task.assignedTo||'(unknown)'}\nTime spent: ${dur}\nPoints: +${task.points||0}${task.client?`\nClient: ${task.client}`:''}\n${task.desc?`\nDetails: ${task.desc}\n`:''}\nhttps://bagavagabonds.github.io/bv-taskmanager/\n\n— Bagavagabonds Task Board`;
-    const raw=[`To: ${to}`,`Subject: ${sub}`,'Content-Type: text/plain; charset=utf-8','',body].join('\n');
-    const enc=btoa(unescape(encodeURIComponent(raw))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-    await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{'Authorization':`Bearer ${cfg.accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({raw:enc})});
-  }catch(e){console.warn('completion email',e);}
+  try{ return parseTeam(await api(cfg,'team'))||[]; }
+  catch(e){ if(e.code===403)return null; throw e; }
 }
 
 // ── CHA-CHING ──────────────────────────────────────────────────────────────
@@ -948,7 +796,7 @@ function LogView({tasks,config,adminUnlocked,allTeam,onUpdate}){
     <div className="log-view">
       <div className="log-header">
         <div><h2>Task History</h2><p>Full log — who, when, how long, how many points{adminUnlocked&&<span style={{marginLeft:'10px',fontSize:'10px',color:'var(--amber)',fontFamily:'DM Mono,monospace',letterSpacing:'0.08em',textTransform:'uppercase'}}>· admin: completed-by is editable</span>}</p></div>
-        {config?.sheetId&&<a className="sheets-btn" target="_blank" rel="noopener" href={`https://docs.google.com/spreadsheets/d/${config.sheetId}`}>↗ Open in Sheets</a>}
+        {adminUnlocked&&config?.sheetId&&<a className="sheets-btn" target="_blank" rel="noopener" href={`https://docs.google.com/spreadsheets/d/${config.sheetId}`}>↗ Open in Sheets</a>}
       </div>
       <div className="log-stats">
         <div className="stat-card"><div className="stat-label">Total done</div><div className="stat-val">{done.length}</div></div>
@@ -1413,7 +1261,7 @@ function App(){
         if(!pr.ok)throw new Error('token invalid');
         const p=await pr.json();
         const ok=await crewCheck(config,p.email);
-        if(!ok){rejectNonCrew(config.accessToken,p.email,ok===null);setRestoring(false);return;}
+        if(!ok){rejectNonCrew(config.accessToken,p.email);setRestoring(false);return;}
         const member=TEAM.find(t=>t.email===p.email);
         setUser({name:member?.name||p.name,email:p.email});
         setRestoring(false);
@@ -1433,7 +1281,8 @@ function App(){
       if(!window.google||!config)return;
       tokenRef.current=window.google.accounts.oauth2.initTokenClient({
         client_id:config.clientId,
-        scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send email profile',
+        // Identity only: Sheets and Gmail powers live in the backend. Don't fold in older broader grants.
+        scope:'openid email profile',include_granted_scopes:false,
         callback:async resp=>{
           // Silent re-auth failure: Google session expired, revoked, or third-party cookies blocked.
           // Don't kick the user out — show a non-disruptive reconnect banner. They can keep reading.
@@ -1450,7 +1299,7 @@ function App(){
             const p=await pr.json();
             // Check before storing the token so non-crew tokens never reach the sync/poll effects.
             const ok=await crewCheck(c,p.email);
-            if(!ok){rejectNonCrew(resp.access_token,p.email,ok===null);return;}
+            if(!ok){rejectNonCrew(resp.access_token,p.email);return;}
             setConfig(c);safeStore(CONFIG_KEY,c);
             setReconnectNeeded(false);setAuthError('');
             const member=TEAM.find(t=>t.email===p.email);
@@ -1472,13 +1321,13 @@ function App(){
     return()=>{try{document.head.removeChild(s);}catch{}};
   },[config?.clientId]);
 
-  // null = can't read the sheet; a network hiccup falls back to the cached list.
-  const crewCheck=async(c,email)=>{let t;try{t=await loadTeam(c);}catch(e){t=TEAM;}if(!t)return null;applyTeam(t);return isCrew(email);};
-  const rejectNonCrew=(token,email,noAccess)=>{
+  // A network hiccup falls back to the cached list.
+  const crewCheck=async(c,email)=>{let t;try{t=await loadTeam(c);}catch(e){t=TEAM;}if(!t)return false;applyTeam(t);return isCrew(email);};
+  const rejectNonCrew=(token,email)=>{
     try{if(window.google&&token)window.google.accounts.oauth2.revoke(token);}catch(e){}
     try{localStorage.removeItem(CONFIG_KEY);}catch(e){}
     setConfig(p=>({...p,accessToken:null,tokenExpiry:null}));setUser(null);
-    setAuthError(noAccess?`${email||'That account'} can't open the BV task sheet. Ask Cam for access.`:`${email||'That account'} isn't on the BV crew list. Ask Cam to add you.`);
+    setAuthError(`${email||'That account'} isn't on the BV crew list. Ask Cam to add you.`);
   };
   const handleSignIn=()=>tokenRef.current?tokenRef.current.requestAccessToken():showToast('Google API loading — try again','error');
   const handleReconnect=()=>{
@@ -1514,7 +1363,7 @@ function App(){
     for(let i=0;i<3&&!ok;i++){
       try{
         if(i>0)await new Promise(r=>setTimeout(r,i*1500));
-        isNew?await sheetAppend(configRef.current,task):await sheetUpdate(configRef.current,task);
+        await sheetSave(configRef.current,task);
         ok=true;
       }catch(e){
         lastErr=e?.message||String(e);
@@ -1534,7 +1383,8 @@ function App(){
     setShowNew(false);setTasks(prev=>[task,...prev]);
     playSound('post');showToast('Task posted! 🎯','success');
     await syncTask(task,true);
-    if(task.assignedToEmail&&config?.accessToken){if(!crewEmail(task.assignedToEmail))showToast(`Task posted — no email sent: ${task.assignedToEmail} isn't on the crew list`,'');else{try{await sendEmail(config,task);}catch(e){showToast('Email failed — task still posted','');}}}
+    // The backend emails the assignee; it only emails crew addresses.
+    if(task.assignedToEmail&&!crewEmail(task.assignedToEmail))showToast(`Task posted — no email sent: ${task.assignedToEmail} isn't on the crew list`,'');
   };
 
   const handleAccept=async task=>{
@@ -1570,7 +1420,7 @@ function App(){
       if(!t){setPendingSync(prev=>{const n=new Set(prev);n.delete(id);return n;});continue;}
       logSync(id,'force-retry');
       try{
-        await sheetAppend(configRef.current,t);
+        await sheetSave(configRef.current,t);
         setPendingSync(prev=>{const n=new Set(prev);n.delete(id);return n;});
         logSync(id,'force-appended');
       }catch(e){
@@ -1614,11 +1464,7 @@ function App(){
     setTasks(updated);setChaChing(true);playSound('complete');
     showToast(`Done! +${pts} pts · ${fmtDur(total)} 💰`,'success');
     const finished=updated.find(t=>t.id===task.id);
-    await syncTask(finished);
-    // Notify the creator if someone else completed their task
-    if(finished.createdByEmail&&config?.accessToken){
-      await sendCompletionEmail(config,finished,user?.name,user?.email);
-    }
+    await syncTask(finished); // backend emails the creator if someone else completed it
   };
 
   const handleDelete=async id=>{
@@ -1630,8 +1476,7 @@ function App(){
     if(configRef.current?.accessToken){
       pushingDeletedRef.current=true;
       try{
-        await sheetClearRow(configRef.current,id);
-        await saveAppConfigKey(configRef.current,'deletedIds',[...newDeleted]);
+        await api(configRef.current,'deleteTasks',{ids:[id]});
       }catch(e){/* silent — local state already updated */}
       finally{setTimeout(()=>{pushingDeletedRef.current=false;},1500);}
     }
@@ -1650,8 +1495,7 @@ function App(){
     if(configRef.current?.accessToken){
       pushingDeletedRef.current=true;
       try{
-        await Promise.all([...ids].map(id=>sheetClearRow(configRef.current,id)));
-        await saveAppConfigKey(configRef.current,'deletedIds',[...newDeleted]);
+        await api(configRef.current,'deleteTasks',{ids:[...ids]});
       }catch(e){/* silent */}
       finally{setTimeout(()=>{pushingDeletedRef.current=false;},1500);}
     }
@@ -1724,10 +1568,7 @@ function App(){
     try{
       // Fetch sheet + config in parallel so we have the latest deletedIds BEFORE doing the merge.
       // Previously the merge ran with stale local deletedIds, which let ghosts slip through.
-      const [sheetTasks,appCfg]=await Promise.all([
-        sheetLoad(cfg),
-        loadAppConfig(cfg).catch(()=>({})),
-      ]);
+      const {tasks:sheetTasks,config:appCfg}=await api(cfg,'load');
       const sheetTeam=parseTeam(appCfg.team);
       if(sheetTeam&&JSON.stringify(sheetTeam)!==JSON.stringify(TEAM))applyTeam(sheetTeam);
       const sheetDeleted=(!pushingDeletedRef.current&&Array.isArray(appCfg.deletedIds))?appCfg.deletedIds:[];
@@ -1797,7 +1638,7 @@ function App(){
         if(cfg?.accessToken&&allRetries.length>0){
           for(const t of allRetries){
             logSync(t.id,'retry-poll');
-            sheetAppend(cfg,t).then(()=>{
+            sheetSave(cfg,t).then(()=>{
               setPendingSync(prev=>{const n=new Set(prev);n.delete(t.id);return n;});
               logSync(t.id,'retry-appended');
             }).catch(e=>{
